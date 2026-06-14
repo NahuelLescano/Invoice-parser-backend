@@ -2,7 +2,7 @@
 
 Este es un backend robusto y modular desarrollado en **Node.js** con **TypeScript**, diseñado para automatizar la extracción de datos de facturas argentinas (como las Facturas A de AFIP) y transformarlas a un esquema estructurado en formato JSON. 
 
-El sistema utiliza el modelo **Gemini 1.5 Flash** a través del nuevo SDK oficial de Google (`@google/genai`) y aplica filtros estrictos para adaptar la información impositiva local a las necesidades de sistemas contables internacionales (como los estadounidenses), descartando impuestos internos o percepciones y validando de manera estricta los ítems y las alícuotas de IVA (21% y 10.5%) mediante **Valibot**.
+El sistema utiliza el modelo **Gemini 2.5 Flash Lite** a través del nuevo SDK oficial de Google (`@google/genai`) y aplica filtros estrictos para adaptar la información impositiva local a las necesidades de sistemas contables internacionales (como los estadounidenses), descartando impuestos internos o percepciones y validando de manera estricta los ítems y las alícuotas de IVA (21% y 10.5%) mediante **Valibot**.
 
 ## 🚀 Tecnologías y Herramientas
 
@@ -10,7 +10,7 @@ El sistema utiliza el modelo **Gemini 1.5 Flash** a través del nuevo SDK oficia
 - **Gestor de Paquetes:** pnpm
 - **Lenguaje:** TypeScript
 - **Framework Web:** Express
-- **Inteligencia Artificial:** `@google/genai` (Gemini 1.5 Flash)
+- **Inteligencia Artificial:** `@google/genai` (Gemini 2.5 Flash Lite)
 - **Validación de Esquemas:** Valibot
 - **Ejecución en Desarrollo:** tsx (TypeScript Execute)
 
