@@ -21,9 +21,11 @@
   },
   "type": "module",
   "dependencies": {
+    "@google/genai": "^2.8.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
-    "morgan": "^1.11.0"
+    "morgan": "^1.11.0",
+    "valibot": "^1.4.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
