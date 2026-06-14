@@ -1,11 +1,25 @@
+import type { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
+import { parse } from "valibot";
 import { tryCatch } from "../tryCatch";
 import { GOOGLEAI_API_KEY } from "../../config";
-import type { Request, Response } from "express";
+import { USAInvoice, USAInvoiceSystemSchema } from "../schemas/invoice";
 
 const ai = new GoogleGenAI({ apiKey: GOOGLEAI_API_KEY });
 
-export const parseInvoice = async (req: Request, res: Response) => {
+type ApiResponse =
+  | { success: true; invoice: USAInvoice }
+  | { error: string; details?: any };
+
+interface ParseInvoiceBody {
+  imageBase64: string;
+  mimeType: string;
+}
+
+export const parseInvoice = async (
+  req: Request<unknown, unknown, ParseInvoiceBody>,
+  res: Response<ApiResponse>,
+): Promise<void> => {
   const { imageBase64, mimeType } = req.body;
 
   if (!imageBase64 || !mimeType) {
@@ -50,45 +64,22 @@ export const parseInvoice = async (req: Request, res: Response) => {
     return;
   }
 
-  //-----
-  // try {
-  //   responseAI = await ai.models.generateContent({
-  //     model: "gemini-2.5-flash-lite",
-  //     contents: [
-  //       prompt,
-  //       {
-  //         inlineData: {
-  //           data: imageBase64,
-  //           mimeType,
-  //         },
-  //       },
-  //     ],
-  //     config: {
-  //       responseMimeType: "application/json",
-  //     },
-  //   });
-  // } catch (error) {
-  //   if (error instanceof Error) {
-  //     res
-  //       .status(422)
-  //       .json({ error: `Error al procesar la factura: ${error.message}` });
-  //     return;
-  //   }
-  //   res
-  //     .status(500)
-  //     .json({ error: "Error desconocido al procesar la factura." });
-  // }
-
   const { text } = result || {};
   if (!text) {
     res.status(500).json({ error: "No se recibió texto de la IA." });
     return;
   }
 
+  console.log("=== JSON CRUDO DE GEMINI ===");
+  console.log(text);
+  console.log("============================");
+
   const parsedData = JSON.parse(text);
+
+  const validatedData: USAInvoice = parse(USAInvoiceSystemSchema, parsedData);
 
   res.json({
     success: true,
-    invoice: parsedData,
+    invoice: validatedData,
   });
 };
