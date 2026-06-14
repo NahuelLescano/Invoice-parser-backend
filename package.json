@@ -1,0 +1,35 @@
+{
+  "name": "invoice-parser-backend",
+  "version": "1.0.0",
+  "description": "Invoice parser backend",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "keywords": [
+    "Invoice, Parser, JSON, AI, Gemini"
+  ],
+  "author": "Nahuel Lescano, Facundo Aylan, Guillermo Mendez",
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.5.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "morgan": "^1.11.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}
