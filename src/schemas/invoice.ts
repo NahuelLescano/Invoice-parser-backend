@@ -19,7 +19,7 @@ export const ItemInvoiceSchema = object({
 });
 
 export const USAInvoiceSystemSchema = object({
-  proedorNombre: string("La razón social del proedor es obligatoria."),
+  proveedorNombre: string("La razón social del proveedor es obligatoria."),
   numeroFactura: string("El número de factura es obligatorio."),
   fecha: string("La fecha es obligatoria."),
   items: array(ItemInvoiceSchema, "La lista de ítems debe ser un arreglo."),
