@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { tryCatch } from "../tryCatch";
 import { GOOGLEAI_API_KEY } from "../../config";
 import type { Request, Response } from "express";
 
@@ -24,9 +25,8 @@ export const parseInvoice = async (req: Request, res: Response) => {
       4. Devuelve la información estrictamente en formato JSON plano, sin bloques de código markdown, respetando la estructura del esquema requerido.
     `;
 
-  let responseAI;
-  try {
-    responseAI = await ai.models.generateContent({
+  const { result, error } = await tryCatch(
+    ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: [
         prompt,
@@ -40,20 +40,46 @@ export const parseInvoice = async (req: Request, res: Response) => {
       config: {
         responseMimeType: "application/json",
       },
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      res
-        .status(422)
-        .json({ error: `Error al procesar la factura: ${error.message}` });
-      return;
-    }
+    }),
+  );
+
+  if (error) {
     res
-      .status(500)
-      .json({ error: "Error desconocido al procesar la factura." });
+      .status(422)
+      .json({ error: `Error al procesar la factura: ${error.message}` });
+    return;
   }
 
-  const { text } = responseAI || {};
+  //-----
+  // try {
+  //   responseAI = await ai.models.generateContent({
+  //     model: "gemini-2.5-flash-lite",
+  //     contents: [
+  //       prompt,
+  //       {
+  //         inlineData: {
+  //           data: imageBase64,
+  //           mimeType,
+  //         },
+  //       },
+  //     ],
+  //     config: {
+  //       responseMimeType: "application/json",
+  //     },
+  //   });
+  // } catch (error) {
+  //   if (error instanceof Error) {
+  //     res
+  //       .status(422)
+  //       .json({ error: `Error al procesar la factura: ${error.message}` });
+  //     return;
+  //   }
+  //   res
+  //     .status(500)
+  //     .json({ error: "Error desconocido al procesar la factura." });
+  // }
+
+  const { text } = result || {};
   if (!text) {
     res.status(500).json({ error: "No se recibió texto de la IA." });
     return;
