@@ -49,8 +49,8 @@ src/
 
 3. **Ejecutar en modo desarrollo:**
    ```bash
-   pnpm dev
-   # (Asegúrate de tener un script "dev": "tsx watch src/index.ts" en tu package.json)
+   pnpm dev   # Modo desarrollo
+   pnpm start # Modo Produccion
    ```
 
 ## 📖 Documentación de la API
