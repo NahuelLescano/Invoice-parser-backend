@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMAGE_PATH="./images/mayorista_net.jpeg"
+IMAGE_PATH="./images/factura.jpeg"
 PAYLOAD_FILE="payload_tmp.json"
 
 if [ ! -f "$IMAGE_PATH" ]; then
@@ -22,7 +22,7 @@ echo "Enviando petición al backend..."
 # Usamos el arroba (@) para decirle a curl que lea el body desde el archivo
 curl -s -X POST http://localhost:3000/api/v1/invoice \
   -H "Content-Type: application/json" \
-  -d @"$PAYLOAD_FILE"
+  -d @"$PAYLOAD_FILE" | jq .
 
 # Limpiamos el archivo temporal para no dejar basura
 rm "$PAYLOAD_FILE"
