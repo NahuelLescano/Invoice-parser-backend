@@ -19,7 +19,7 @@ Un servicio backend robusto construido con Node.js y TypeScript que utiliza **Go
 
 ## 📂 Estructura del Proyecto
 
-\`\`\`text
+```text
 src/
 ├── config/
 │   └── config.ts         # Carga de variables de entorno (PORT, API_KEY)
@@ -32,27 +32,26 @@ src/
 ├── schemas/
 │   └── invoice.schema.ts # Esquemas de Valibot e interfaces de TypeScript
 └── index.ts              # Entry point y configuración de Express
-\`\`\`
+```
 
 ## 🚀 Instalación y Configuración
 
 1. **Clonar el repositorio e instalar dependencias:**
-   \`\`\`bash
+   ```bash
    pnpm install
-   \`\`\`
+   ```
 
 2. **Configurar variables de entorno:**
    Crea un archivo `.env` en la raíz del proyecto basándote en el siguiente formato:
-   \`\`\`env
-   PORT=3000
+   ```env
    GOOGLEAI_API_KEY=tu_api_key_de_google_aqui
-   \`\`\`
+   ```
 
 3. **Ejecutar en modo desarrollo:**
-   \`\`\`bash
+   ```bash
    pnpm dev
    # (Asegúrate de tener un script "dev": "tsx watch src/index.ts" en tu package.json)
-   \`\`\`
+   ```
 
 ## 📖 Documentación de la API
 
@@ -61,16 +60,16 @@ src/
 Analiza la imagen de una factura y devuelve los datos estructurados.
 
 **Body de la petición (JSON):**
-\`\`\`json
+```json
 {
   "imageBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
   "mimeType": "image/jpeg"
 }
-\`\`\`
+```
 
 **Respuesta Exitosa (200 OK):**
 Devuelve el formato consolidado para el sistema estadounidense.
-\`\`\`json
+```json
 {
   "success": true,
   "data": {
@@ -89,7 +88,7 @@ Devuelve el formato consolidado para el sistema estadounidense.
     ]
   }
 }
-\`\`\`
+```
 
 **Manejo de Errores:**
 El sistema implementa códigos HTTP semánticos:
