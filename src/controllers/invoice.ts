@@ -1,9 +1,14 @@
 import type { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
-import { parse } from "valibot";
+import { safeParse } from "valibot";
 import { tryCatch } from "../tryCatch";
 import { GOOGLEAI_API_KEY } from "../../config";
-import { USAInvoice, USAInvoiceSystemSchema } from "../schemas/invoice";
+import {
+  GeminiInvoiceSchema,
+  ParseInvoiceBodySchema,
+  USAInvoice,
+  USAInvoiceSystemSchema,
+} from "../schemas/invoice";
 
 const ai = new GoogleGenAI({ apiKey: GOOGLEAI_API_KEY });
 
@@ -22,12 +27,15 @@ export const parseInvoice = async (
 ): Promise<void> => {
   const { imageBase64, mimeType } = req.body;
 
-  if (!imageBase64 || !mimeType) {
+  const bodyInvoiceParse = safeParse(ParseInvoiceBodySchema, req.body);
+  if (!bodyInvoiceParse.success) {
     res.status(400).json({
-      error: "Faltan parámetros: imageBase64 y mimeType son requeridos.",
+      error: "El cuerpo de la petición no es válido.",
+      details: bodyInvoiceParse.issues,
     });
     return;
   }
+
   const prompt = `
       Eres un extractor de datos de facturas optimizado para sistemas estándar internacionales. 
       Tu tarea es procesar la imagen de la factura argentina adjunta y extraer ÚNICAMENTE los campos solicitados, ignorando cualquier impuesto local complejo.
@@ -53,6 +61,7 @@ export const parseInvoice = async (
       ],
       config: {
         responseMimeType: "application/json",
+        responseSchema: GeminiInvoiceSchema,
       },
     }),
   );
@@ -70,16 +79,21 @@ export const parseInvoice = async (
     return;
   }
 
-  console.log("=== JSON CRUDO DE GEMINI ===");
-  console.log(text);
-  console.log("============================");
-
   const parsedData = JSON.parse(text);
 
-  const validatedData: USAInvoice = parse(USAInvoiceSystemSchema, parsedData);
+  const invoiceParse = safeParse(USAInvoiceSystemSchema, parsedData);
+
+  if (!invoiceParse.success) {
+    res.status(422).json({
+      error:
+        "La IA devolvió un formato que no coincide con el sistema destino.",
+      details: invoiceParse.issues,
+    });
+    return;
+  }
 
   res.json({
     success: true,
-    invoice: validatedData,
+    invoice: invoiceParse.output,
   });
 };
