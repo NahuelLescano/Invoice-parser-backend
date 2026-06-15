@@ -1,5 +1,5 @@
 import express, { type Request, type Response } from "express";
-import { PORT, API_V1 } from "../config";
+import { PORT, API_V1 } from "./config/env";
 import { invoiceRouter } from "./routes/invoice";
 import { middlewares } from "./middleware";
 

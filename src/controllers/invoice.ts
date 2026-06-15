@@ -2,18 +2,19 @@ import type { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
 import { safeParse } from "valibot";
 import { tryCatch } from "../tryCatch";
-import { GOOGLEAI_API_KEY } from "../../config";
+import { GOOGLEAI_API_KEY } from "../config/env";
+import { GeminiInvoiceSchema } from "../schemas/geminiInvoice";
 import {
-  GeminiInvoiceSchema,
   ParseInvoiceBodySchema,
-  USAInvoice,
   USAInvoiceSystemSchema,
+  type USInvoicePayload,
 } from "../schemas/invoice";
+import { INVOICE_PARSER_PROMPT } from "../prompts/invoice";
 
 const ai = new GoogleGenAI({ apiKey: GOOGLEAI_API_KEY });
 
 type ApiResponse =
-  | { success: true; invoice: USAInvoice }
+  | { success: true; invoice: USInvoicePayload }
   | { error: string; details?: any };
 
 interface ParseInvoiceBody {
@@ -36,22 +37,11 @@ export const parseInvoice = async (
     return;
   }
 
-  const prompt = `
-      Eres un extractor de datos de facturas optimizado para sistemas estándar internacionales. 
-      Tu tarea es procesar la imagen de la factura argentina adjunta y extraer ÚNICAMENTE los campos solicitados, ignorando cualquier impuesto local complejo.
-
-      Reglas de extracción:
-      1. Extrae el nombre del proveedor (Razón Social), número de factura y fecha de emisión.
-      2. Para cada ítem en la tabla de conceptos, extrae: descripción del insumo, cantidad, precio unitario y el porcentaje de IVA aplicado (este debe ser estrictamente 21 o 10.5).
-      3. IMPORTANTE: Ignora por completo campos de "Impuestos Internos", "Percepciones de IIBB", "Percepciones de IVA" o "Conceptos No Gravados". No sumes estos valores a ningún otro campo.
-      4. Devuelve la información estrictamente en formato JSON plano, sin bloques de código markdown, respetando la estructura del esquema requerido.
-    `;
-
   const { result, error } = await tryCatch(
     ai.models.generateContent({
       model: "gemini-2.5-flash-lite",
       contents: [
-        prompt,
+        INVOICE_PARSER_PROMPT,
         {
           inlineData: {
             data: imageBase64,
@@ -92,8 +82,37 @@ export const parseInvoice = async (
     return;
   }
 
+  const facturaArg = invoiceParse.output;
+  const totalExcludingTaxes = facturaArg.items.reduce((acc, item) => {
+    return acc + item.cantidad * item.precioUnitario;
+  }, 0);
+
+  const totalTaxes =
+    facturaArg.ivaTotal +
+    facturaArg.impuestosInternosTotal +
+    facturaArg.percepcionesIva +
+    facturaArg.percepcionesIibb;
+
+  const totalIncludingTaxes =
+    totalExcludingTaxes + totalTaxes + facturaArg.conceptosNoGravados;
+
+  const usSystemPayload: USInvoicePayload = {
+    vendorName: facturaArg.proveedorNombre,
+    dateOfInvoice: facturaArg.fecha,
+    invoiceNumber: facturaArg.numeroFactura,
+    totalCostExcludingTaxes: Number(totalExcludingTaxes.toFixed(2)),
+    totalTaxes: Number(totalTaxes.toFixed(2)),
+    totalCostIncludingTaxes: Number(totalIncludingTaxes.toFixed(2)),
+    items: facturaArg.items.map((item) => ({
+      description: item.insumo,
+      quantityPurchased: item.cantidad,
+      unitPrice: item.precioUnitario,
+      // Si algun dia hay mas impuestos por item, se pueden agregar aca
+    })),
+  };
+
   res.json({
     success: true,
-    invoice: invoiceParse.output,
+    invoice: usSystemPayload,
   });
 };
