@@ -1,7 +1,7 @@
 import express, { type Request, type Response } from "express";
-import { PORT, API_V1 } from "./config/env";
-import { invoiceRouter } from "./routes/invoice";
-import { middlewares } from "./middleware";
+import { PORT, API_V1 } from "@/config/env.ts";
+import { invoiceRouter } from "@/routes/invoice.ts";
+import { middlewares } from "@/middleware/middleware.ts";
 
 const server = express();
 

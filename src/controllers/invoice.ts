@@ -1,15 +1,15 @@
 import type { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
 import { safeParse } from "valibot";
-import { tryCatch } from "../tryCatch";
-import { GOOGLEAI_API_KEY } from "../config/env";
-import { GeminiInvoiceSchema } from "../schemas/geminiInvoice";
+import { tryCatch } from "@/utils/tryCatch.ts";
+import { GOOGLEAI_API_KEY } from "@/config/env.ts";
+import { GeminiInvoiceSchema } from "@/schemas/geminiInvoice.ts";
 import {
   ParseInvoiceBodySchema,
   USAInvoiceSystemSchema,
   type USInvoicePayload,
-} from "../schemas/invoice";
-import { INVOICE_PARSER_PROMPT } from "../prompts/invoice";
+} from "@/schemas/invoice.ts";
+import { INVOICE_PARSER_PROMPT } from "@/prompts/invoice.ts";
 
 const ai = new GoogleGenAI({ apiKey: GOOGLEAI_API_KEY });
 
