@@ -1,30 +1,52 @@
 #!/bin/bash
 
-IMAGE_PATH="./images/quilmes.jpeg"
-PAYLOAD_FILE="payload_tmp.json"
-
-if [ ! -f "$IMAGE_PATH" ]; then
-  echo "Error: No se encontró el archivo '$IMAGE_PATH'."
-  exit 1
+if [ "$#" -eq 0 ]; then
+    echo "❌ Uso: $0 <imagen1> [imagen2] [imagen3] ..."
+    echo "Ejemplo: $0 quilmes.jpeg dba.png"
+    exit 1
 fi
 
-echo "Generando payload JSON..."
+echo "🔄 Preparando facturas..."
 
-# 1. Armamos el JSON escribiendo directamente en un archivo temporal
-echo -n '{"mimeType": "image/jpeg", "imageBase64": "' >"$PAYLOAD_FILE"
-# 2. Inyectamos el base64 directamente en el archivo
-base64 -w 0 "$IMAGE_PATH" >>"$PAYLOAD_FILE"
-# 3. Cerramos el JSON
-echo '"}' >>"$PAYLOAD_FILE"
+PAYLOAD_FILE=$(mktemp)
+echo '{"invoices": [' > "$PAYLOAD_FILE"
 
-echo "Enviando petición al backend..."
+FIRST_ITEM=1
 
-# Usamos el arroba (@) para decirle a curl que lea el body desde el archivo
-curl -s -X POST http://localhost:3000/api/v1/invoice \
-  -H "Content-Type: application/json" \
-  -d @"$PAYLOAD_FILE" | jq .
+for FILE in "$@"; do
+    if [ ! -f "$FILE" ]; then
+        echo "⚠️ Archivo no encontrado: $FILE (Omitiendo...)"
+        continue
+    fi
 
-# Limpiamos el archivo temporal para no dejar basura
+    MIME_TYPE=$(file -b --mime-type "$FILE")
+    
+    BASE64_DATA=$(base64 -w 0 "$FILE")
+
+    if [ $FIRST_ITEM -eq 0 ]; then
+        echo ',' >> "$PAYLOAD_FILE"
+    fi
+    FIRST_ITEM=0
+
+    echo "  {" >> "$PAYLOAD_FILE"
+    echo "    \"mimeType\": \"$MIME_TYPE\"," >> "$PAYLOAD_FILE"
+    echo "    \"imageBase64\": \"$BASE64_DATA\"" >> "$PAYLOAD_FILE"
+    echo "  }" >> "$PAYLOAD_FILE"
+    
+    echo "✅ Procesado localmente: $FILE ($MIME_TYPE)"
+done
+
+echo "]}" >> "$PAYLOAD_FILE"
+
+echo "🚀 Enviando lote al servidor..."
+echo "---------------------------------------------------"
+
+curl -sX POST http://localhost:3000/api/v1/invoice \
+    -H "Content-Type: application/json" \
+    -d "@$PAYLOAD_FILE" | jq .
+
 rm "$PAYLOAD_FILE"
 
 echo ""
+echo "---------------------------------------------------"
+echo "🏁 Finalizado."

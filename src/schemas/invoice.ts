@@ -47,17 +47,37 @@ export const USAInvoiceSystemSchema = object({
 export type USAInvoice = InferInput<typeof USAInvoiceSystemSchema>;
 
 export const ParseInvoiceBodySchema = object({
-  imageBase64: pipe(
-    string(),
-    trim(),
-    minLength(1, "La imagen en base64 no puede estar vacía."),
-  ),
-  mimeType: pipe(
-    string(),
-    trim(),
-    minLength(1, "El tipo MIME es obligatorio."),
+  invoices: pipe(
+    array(
+      object({
+        imageBase64: pipe(
+          string(),
+          trim(),
+          minLength(1, "La imagen en base64 no puede estar vacía."),
+        ),
+        mimeType: pipe(
+          string(),
+          trim(),
+          minLength(1, "El tipo MIME es obligatorio."),
+        ),
+      }),
+    ),
+    minLength(1, "Debe proporcionar al menos una factura para procesar."),
   ),
 });
+
+// export const ParseInvoiceBodySchema = object({
+//   imageBase64: pipe(
+//     string(),
+//     trim(),
+//     minLength(1, "La imagen en base64 no puede estar vacía."),
+//   ),
+//   mimeType: pipe(
+//     string(),
+//     trim(),
+//     minLength(1, "El tipo MIME es obligatorio."),
+//   ),
+// });
 
 export type ParseInvoiceBody = InferInput<typeof ParseInvoiceBodySchema>;
 
