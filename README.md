@@ -48,7 +48,7 @@ Analiza un lote de una o más imágenes de facturas en paralelo.
 
 **Body de la petición (JSON):**
 
-```bash
+```json
 {
   "invoices": [
     {
@@ -67,7 +67,7 @@ Analiza un lote de una o más imágenes de facturas en paralelo.
 
 Si al menos una factura se procesó correctamente, el estado es 200. Las facturas fallidas no detienen el flujo general y se informan en warnings.
 
-```bash
+```json
 {
   "success": true,
   "invoices": [
