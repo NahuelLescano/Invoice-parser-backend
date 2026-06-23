@@ -1,100 +1,114 @@
-# 🧾 Invoice Parser Backend (Arg ➡️ US)
+# 🧾 Invoice Parser Backend (Arg ➡️ US • Batch Edition)
 
-Un servicio backend robusto construido con Node.js y TypeScript que utiliza **Google Gemini 2.5 Flash Lite** para extraer datos de facturas argentinas (A, B y C) a partir de imágenes, validarlos estrictamente y transformarlos a un formato contable simplificado compatible con sistemas de Estados Unidos.
-
-## ✨ Características Principales
-
-- **Extracción Inteligente:** Utiliza LLMs mediante *Prompt Engineering* estructurado y `responseSchema` para asegurar que la IA devuelva siempre el formato JSON exacto sin alucinaciones.
-- **Validación Estricta de Extremo a Extremo:** Implementa **Valibot** (con el patrón *Result / Errors as Values*) para sanitizar el body de entrada y asegurar matemáticamente la respuesta de la IA.
-- **Transformación Impositiva (Arg -> US):** Procesa el complejo desglose impositivo argentino (IVA, Impuestos Internos, Percepciones de IIBB/IVA y Conceptos No Gravados) y los consolida matemáticamente en una estructura americana (`totalCostExcludingTaxes`, `totalTaxes`, `totalCostIncludingTaxes`).
-- **Arquitectura Limpia:** Separación de responsabilidades con Alias Paths (`@/`), controladores aislados, archivos de configuración centralizados y prompts factorizados.
-
-## 🛠️ Tecnologías Utilizadas
-
-- **Runtime:** Node.js v20+ (con soporte nativo para `.env` vía `node:process`)
-- **Lenguaje:** TypeScript (`tsx` para ejecución en desarrollo con alias paths)
-- **Framework Web:** Express.js
-- **Validación de Datos:** Valibot (v0.30+)
-- **Inteligencia Artificial:** `@google/genai` (Gemini 2.5 Flash Lite)
+Un servicio backend de alto rendimiento construido con Node.js y TypeScript que utiliza **Google Gemini 2.5 Flash Lite** para extraer datos de múltiples facturas argentinas (A, B y C) en paralelo a partir de imágenes, validarlas estrictamente y transformarlas a un formato contable simplificado compatible con sistemas de Estados Unidos.
 
 ## 📂 Estructura del Proyecto
 
 ```text
 src/
 ├── config/
-│   └── config.ts         # Carga de variables de entorno (PORT, API_KEY)
+│   └── config.ts         # Centralización de variables de entorno y loadEnvFile()
 ├── controllers/
-│   └── invoice.ts        # Lógica de extracción, validación y transformación
+│   └── invoice.ts        # Controlador batch con Promesas en paralelo y transformación
 ├── prompts/
-│   └── invoice.prompt.ts # Instrucciones aisladas para la IA
+│   └── invoice.prompt.ts # Prompt de auditoría impositiva aislado
 ├── routes/
-│   └── invoice.routes.ts # Definición de endpoints
+│   └── invoice.routes.ts # Definición de rutas Express
 ├── schemas/
-│   └── invoice.schema.ts # Esquemas de Valibot e interfaces de TypeScript
-└── index.ts              # Entry point y configuración de Express
+│   └── invoice.schema.ts # Esquemas rigurosos de Valibot (Input, Internal y Output)
+└── index.ts              # Servidor Express y middlewares
 ```
 
 ## 🚀 Instalación y Configuración
 
-1. **Clonar el repositorio e instalar dependencias:**
-   ```bash
-   pnpm install
-   ```
+1. Instalar dependencias:
 
-2. **Configurar variables de entorno:**
-   Crea un archivo `.env` en la raíz del proyecto basándote en el siguiente formato:
-   ```env
-   GOOGLEAI_API_KEY=tu_api_key_de_google_aqui
-   ```
+```bash
+pnpm install
+```
 
-3. **Ejecutar en modo desarrollo:**
-   ```bash
-   pnpm dev   # Modo desarrollo
-   pnpm start # Modo Produccion
-   ```
+2. Variables de entorno:
+
+```bash
+PORT=3000 ## O cualquier otro puerto
+GOOGLEAI_API_KEY=tu_api_key_aquí
+```
+
+3. Correr en desarrollo (con Live Reload):
+
+```bash
+pnpm dev
+```
 
 ## 📖 Documentación de la API
 
-### `POST /api/v1/parse-invoice`
+`POST /api/v1/parse-invoice`
 
-Analiza la imagen de una factura y devuelve los datos estructurados.
+Analiza un lote de una o más imágenes de facturas en paralelo.
 
 **Body de la petición (JSON):**
-```json
+
+```bash
 {
-  "imageBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
-  "mimeType": "image/jpeg"
+  "invoices": [
+    {
+      "imageBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
+      "mimeType": "image/jpeg"
+    },
+    {
+      "imageBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
+      "mimeType": "image/png"
+    }
+  ]
 }
 ```
 
-**Respuesta Exitosa (200 OK):**
-Devuelve el formato consolidado para el sistema estadounidense.
-```json
+**Respuesta Exitosa / Éxito Parcial (200 OK):**
+
+Si al menos una factura se procesó correctamente, el estado es 200. Las facturas fallidas no detienen el flujo general y se informan en warnings.
+
+```bash
 {
   "success": true,
-  "data": {
-    "vendorName": "Cerveceria y Malteria Quilmes",
-    "dateOfInvoice": "2026-06-09",
-    "invoiceNumber": "0001-00001234",
-    "totalCostExcludingTaxes": 10000.00,
-    "totalTaxes": 2100.00,
-    "totalCostIncludingTaxes": 12100.00,
-    "items": [
-      {
-        "description": "Cerveza Patagonia Amber Lager",
-        "quantityPurchased": 10,
-        "unitPrice": 1000.00
-      }
-    ]
-  }
+  "invoices": [
+    {
+      "vendorName": "DISTRIBUIDORA DE BEBIDAS SRL",
+      "dateOfInvoice": "2026-06-08",
+      "invoiceNumber": "00013-00180863",
+      "totalCostExcludingTaxes": 176964.00,
+      "totalTaxes": 46888.76,
+      "totalCostIncludingTaxes": 223852.76,
+      "items": [
+        {
+          "description": "VINO CAFAYATE RESERVE TORRONTES 750 cc",
+          "quantityPurchased": 6,
+          "unitPrice": 7383.00
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "Factura #2 falló: La IA devolvió un formato que no coincide con el sistema destino."
+  ]
 }
 ```
 
-**Manejo de Errores:**
-El sistema implementa códigos HTTP semánticos:
-- `400 Bad Request`: Error en la estructura de entrada (Base64 o MIME faltante/inválido).
-- `422 Unprocessable Entity`: La IA devolvió datos inconsistentes o faltantes según los esquemas de Valibot.
-- `500 Internal Server Error`: Fallos de red o infraestructura con el servicio de Google AI.
+### Errores de Estructura:
 
----
-*Desarrollado con foco en tipado estricto y código predecible.*
+* 400 Bad Request: El payload no contiene el array invoices o los elementos no cumplen con el formato requerido por Valibot.
+
+* 422 Unprocessable Entity: Ninguna de las facturas enviadas pudo ser procesada o validada con éxito.
+
+
+## 🧪 Pruebas desde la Terminal (CLI)
+El proyecto incluye un script de automatización en Bash (test-invoices.sh) optimizado para sistemas Linux. Este script toma múltiples archivos de imágenes reales, los codifica a Base64 de forma eficiente escribiendo en un búfer temporal (evitando el error de longitud de argumentos del sistema operativo), e inyecta la respuesta formateada con jq.
+
+Ejecución:
+
+```bash
+# Otorgar permisos si es la primera vez
+chmod +x test-invoices.sh
+
+# Ejecutar pasando una o más imágenes como argumentos
+./test-invoices.sh ./images/quilmes.jpeg ./images/dba.png ./images/ticket.jpg
+```
