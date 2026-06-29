@@ -5,8 +5,8 @@ import { tryCatch } from "@/utils/tryCatch.ts";
 import { GOOGLEAI_API_KEY } from "@/config/env.ts";
 import { GeminiInvoiceSchema } from "@/schemas/geminiInvoice.ts";
 import {
+  FacturaArgSchema,
   ParseInvoiceBodySchema,
-  USAInvoiceSystemSchema,
   type USInvoicePayload,
 } from "@/schemas/invoice.ts";
 import { INVOICE_PARSER_PROMPT } from "@/prompts/invoice.ts";
@@ -112,8 +112,7 @@ const parseSingleInvoice = async (invoiceData: {
   }
 
   const parsedData = JSON.parse(text);
-
-  const invoiceParse = safeParse(USAInvoiceSystemSchema, parsedData);
+  const invoiceParse = safeParse(FacturaArgSchema, parsedData);
 
   if (!invoiceParse.success) {
     throw new Error(
@@ -126,14 +125,49 @@ const parseSingleInvoice = async (invoiceData: {
     return acc + item.cantidad * item.precioUnitario;
   }, 0);
 
-  const totalTaxes =
-    facturaArg.ivaTotal +
-    facturaArg.impuestosInternosTotal +
-    facturaArg.percepcionesIva +
-    facturaArg.percepcionesIibb;
+  const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
 
   const totalIncludingTaxes =
     totalExcludingTaxes + totalTaxes + facturaArg.conceptosNoGravados;
+
+  const proveedor = facturaArg.proveedorNombre.toUpperCase();
+
+  let porcentajeImpIntPenaflor = 0;
+  if (proveedor.includes("PEÑAFLOR")) {
+    porcentajeImpIntPenaflor =
+      facturaArg.impuestosInternosTotal / facturaArg.subtotalNeto;
+  }
+
+  const itemsProcesados = facturaArg.items.map((item) => {
+    let unitPriceWithIva = 0;
+    let unitPriceWithoutIva = 0;
+
+    const precioNeto = item.precioUnitario;
+    const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
+    if (proveedor.includes("PEÑAFLOR")) {
+      const impIntProporcional = precioNeto * porcentajeImpIntPenaflor;
+      unitPriceWithIva = precioNeto + ivaProporcional + impIntProporcional;
+      unitPriceWithoutIva = precioNeto + impIntProporcional;
+    } else if (proveedor.includes("WINE")) {
+      unitPriceWithIva = precioNeto + ivaProporcional;
+      unitPriceWithoutIva = precioNeto;
+    } else if (proveedor.includes("DBA")) {
+      const precioConIva = precioNeto + ivaProporcional;
+      const precioBot = precioConIva + item.impuestosInternos;
+      unitPriceWithIva = precioBot;
+      unitPriceWithoutIva = precioNeto + item.impuestosInternos;
+    } else {
+      unitPriceWithIva = precioNeto + item.impuestosInternos + ivaProporcional;
+      unitPriceWithoutIva = precioNeto + item.impuestosInternos;
+    }
+
+    return {
+      description: item.insumo,
+      quantityPurchased: item.cantidad,
+      unitPriceWithIva: Number(unitPriceWithIva.toFixed(2)),
+      unitPriceWithoutIva: Number(unitPriceWithoutIva.toFixed(2)),
+    }
+  });
 
   return {
     vendorName: facturaArg.proveedorNombre,
@@ -142,10 +176,6 @@ const parseSingleInvoice = async (invoiceData: {
     totalCostExcludingTaxes: Number(totalExcludingTaxes.toFixed(2)),
     totalTaxes: Number(totalTaxes.toFixed(2)),
     totalCostIncludingTaxes: Number(totalIncludingTaxes.toFixed(2)),
-    items: facturaArg.items.map((item) => ({
-      description: item.insumo,
-      quantityPurchased: item.cantidad,
-      unitPrice: item.precioUnitario,
-    })),
+    items: itemsProcesados,
   };
 };

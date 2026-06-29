@@ -50,25 +50,21 @@ export const GeminiInvoiceSchema = {
         ],
       },
     },
+    subtotalNeto: {
+      type: "NUMBER",
+      description:
+        "Subtotal neto general de la factura antes de aplicar impuestos (Base Imponible general). Si no hay, poner 0.",
+    },
     ivaTotal: { type: "NUMBER" },
     impuestosInternosTotal: {
       type: "NUMBER",
       description:
-        "Total acumulado de impuestos internos al pie del comprobante.",
-    },
-    percepcionesIva: {
-      type: "NUMBER",
-      description: "Monto por Percepción de IVA al pie. Si no hay, 0.",
-    },
-    percepcionesIibb: {
-      type: "NUMBER",
-      description:
-        "Monto por Percepción de Ingresos Brutos (IIBB) al pie. Si no hay, 0.",
+        "Total acumulado de impuestos internos al pie del comprobante. Si no hay, poner 0.",
     },
     conceptosNoGravados: {
       type: "NUMBER",
       description:
-        "Monto por conceptos o importes exentos/no gravados. Si no hay, 0.",
+        "Monto por conceptos o importes exentos/no gravados. Si no hay, poner 0.",
     },
   },
   required: [
@@ -76,10 +72,9 @@ export const GeminiInvoiceSchema = {
     "numeroFactura",
     "fecha",
     "items",
+    "subtotalNeto",
     "ivaTotal",
     "impuestosInternosTotal",
-    "percepcionesIva",
-    "percepcionesIibb",
     "conceptosNoGravados",
   ],
 };
