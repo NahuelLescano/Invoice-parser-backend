@@ -1,50 +1,49 @@
-export const GeminiInvoiceSchema = {
-  type: "OBJECT",
+import { Type, type Schema } from "@google/genai";
+
+export const GeminiInvoiceSchema: Schema = {
+  type: Type.OBJECT,
   properties: {
     proveedorNombre: {
-      type: "STRING",
+      type: Type.STRING,
       description: "Razón social o nombre fantasía del emisor de la factura.",
     },
     numeroFactura: {
-      type: "STRING",
-      description:
-        "Número completo del comprobante incluyendo punto de venta (ej: 0041-00033768).",
+      type: Type.STRING,
+      description: "Número completo del comprobante incluyendo punto de venta.",
     },
     fecha: {
-      type: "STRING",
-      description:
-        "Fecha de emisión del documento en formato YYYY-MM-DD para compatibilidad internacional.",
+      type: Type.STRING,
+      description: "Fecha de emisión del documento en formato YYYY-MM-DD.",
     },
     items: {
-      type: "ARRAY",
+      type: Type.ARRAY,
       description:
         "Lista de productos o conceptos detallados en la tabla principal.",
       items: {
-        type: "OBJECT",
+        type: Type.OBJECT,
         properties: {
           insumo: {
-            type: "STRING",
+            type: Type.STRING,
             description: "Descripción del ítem o mercadería.",
           },
-          cantidad: { type: "NUMBER" },
+          cantidad: { type: Type.NUMBER },
           precioUnitario: {
-            type: "NUMBER",
+            type: Type.NUMBER,
             description: "Precio neto unitario sin impuestos.",
           },
           ivaPorcentaje: {
-            type: "NUMBER",
+            type: Type.NUMBER,
             description: "Porcentaje de IVA (21, 10.5 o 0).",
           },
           impuestosInternos: {
-            type: "NUMBER",
-            description:
-              "Impuesto interno aplicado por unidad. Si no se detalla por ítem, poner 0.",
+            type: Type.NUMBER,
+            description: "Impuesto interno aplicado por unidad. Si no hay, 0.",
           },
-        },
-        unidadesPorBulto: {
-          type: "NUMBER",
-          description:
-            "Si la descripción indica que es una caja, pack o bulto (ej: 'caja x6', 'Pack x12'), extrae ese multiplicador (6, 12). Si se vende por unidad suelta o no se especifica, asigna obligatoriamente 1.",
+          unidadesPorBulto: {
+            type: Type.NUMBER,
+            description:
+              "Si la descripción indica caja, pack o bulto (ej: 'caja x6'), extrae ese multiplicador. Si es suelto, 1.",
+          },
         },
         required: [
           "insumo",
@@ -57,20 +56,18 @@ export const GeminiInvoiceSchema = {
       },
     },
     subtotalNeto: {
-      type: "NUMBER",
+      type: Type.NUMBER,
       description:
-        "Subtotal neto general de la factura antes de aplicar impuestos (Base Imponible general). Si no hay, poner 0.",
+        "Subtotal neto general de la factura antes de aplicar impuestos.",
     },
-    ivaTotal: { type: "NUMBER" },
+    ivaTotal: { type: Type.NUMBER },
     impuestosInternosTotal: {
-      type: "NUMBER",
-      description:
-        "Total acumulado de impuestos internos al pie del comprobante. Si no hay, poner 0.",
+      type: Type.NUMBER,
+      description: "Total acumulado de impuestos internos al pie.",
     },
     conceptosNoGravados: {
-      type: "NUMBER",
-      description:
-        "Monto por conceptos o importes exentos/no gravados. Si no hay, poner 0.",
+      type: Type.NUMBER,
+      description: "Monto por exentos/no gravados.",
     },
   },
   required: [
@@ -83,4 +80,4 @@ export const GeminiInvoiceSchema = {
     "impuestosInternosTotal",
     "conceptosNoGravados",
   ],
-};
+} as const;
