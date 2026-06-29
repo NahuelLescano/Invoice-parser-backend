@@ -44,7 +44,7 @@ export const ItemFacturaSchema = object({
 
 export const FacturaArgSchema = object({
   proveedorNombre: string(),
-  numeroFactura: string(),
+  numeroFactura: pipe(string(), trim()),
   fecha: string(),
   items: array(ItemFacturaSchema),
   subtotalNeto: number(),
