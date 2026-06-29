@@ -142,10 +142,16 @@ const parseSingleInvoice = async (invoiceData: {
     let unitPriceWithIva = 0;
     let unitPriceWithoutIva = 0;
 
-    const precioNeto = item.precioUnitario;
+    const unidadesPorCaja = item.unidadesPorBulto ?? 1;
+
+    const cantidadReal = item.cantidad * unidadesPorCaja;
+    const precioNeto = item.precioUnitario / unidadesPorCaja;
+    const impInternoUnitario = item.impuestosInternos / unidadesPorCaja;
+
     const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
     if (proveedor.includes("PEÑAFLOR")) {
       const impIntProporcional = precioNeto * porcentajeImpIntPenaflor;
+
       unitPriceWithIva = precioNeto + ivaProporcional + impIntProporcional;
       unitPriceWithoutIva = precioNeto + impIntProporcional;
     } else if (proveedor.includes("WINE")) {
@@ -153,20 +159,21 @@ const parseSingleInvoice = async (invoiceData: {
       unitPriceWithoutIva = precioNeto;
     } else if (proveedor.includes("DBA")) {
       const precioConIva = precioNeto + ivaProporcional;
-      const precioBot = precioConIva + item.impuestosInternos;
+      const precioBot = precioConIva + impInternoUnitario;
+
       unitPriceWithIva = precioBot;
-      unitPriceWithoutIva = precioNeto + item.impuestosInternos;
+      unitPriceWithoutIva = precioNeto + impInternoUnitario;
     } else {
-      unitPriceWithIva = precioNeto + item.impuestosInternos + ivaProporcional;
-      unitPriceWithoutIva = precioNeto + item.impuestosInternos;
+      unitPriceWithIva = precioNeto + impInternoUnitario + ivaProporcional;
+      unitPriceWithoutIva = precioNeto + impInternoUnitario;
     }
 
     return {
       description: item.insumo,
-      quantityPurchased: item.cantidad,
+      quantityPurchased: Number(cantidadReal.toFixed(2)),
       unitPriceWithIva: Number(unitPriceWithIva.toFixed(2)),
       unitPriceWithoutIva: Number(unitPriceWithoutIva.toFixed(2)),
-    }
+    };
   });
 
   return {

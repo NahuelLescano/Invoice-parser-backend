@@ -39,6 +39,7 @@ export const ItemFacturaSchema = object({
   precioUnitario: number(),
   ivaPorcentaje: union([literal(21), literal(10.5), literal(0)]),
   impuestosInternos: number(),
+  unidadesPorBulto: number(),
 });
 
 export const FacturaArgSchema = object({

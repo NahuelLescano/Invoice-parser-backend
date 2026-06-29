@@ -41,12 +41,18 @@ export const GeminiInvoiceSchema = {
               "Impuesto interno aplicado por unidad. Si no se detalla por ítem, poner 0.",
           },
         },
+        unidadesPorBulto: {
+          type: "NUMBER",
+          description:
+            "Si la descripción indica que es una caja, pack o bulto (ej: 'caja x6', 'Pack x12'), extrae ese multiplicador (6, 12). Si se vende por unidad suelta o no se especifica, asigna obligatoriamente 1.",
+        },
         required: [
           "insumo",
           "cantidad",
           "precioUnitario",
           "ivaPorcentaje",
           "impuestosInternos",
+          "unidadesPorBulto",
         ],
       },
     },
