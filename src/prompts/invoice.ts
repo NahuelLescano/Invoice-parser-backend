@@ -9,4 +9,4 @@ export const INVOICE_PARSER_PROMPT = `
   3. TOTALES: Extrae el Subtotal Neto (Base Imponible general), el IVA Total, los Impuestos Internos Totales y los Conceptos No Gravados.
   4. REGLA ESTRICTA: IGNORA por completo cualquier "Percepción de IVA" o "Percepción de Ingresos Brutos (IIBB)". No las sumes ni las incluyas en ningún lado.
   5. Si un valor no existe, asígnale 0.
-`;
+` as const;
