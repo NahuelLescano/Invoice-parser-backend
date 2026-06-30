@@ -64,6 +64,8 @@ export const parseInvoice = async (
     return;
   }
 
+  if (warnings.length > 0) console.warn(`Advertencias: ${warnings.join("\n")}`);
+  
   res.json({
     success: true,
     invoices: successInvoices,
@@ -85,7 +87,8 @@ const parseSingleInvoice = async (invoiceData: {
 
   const { result, error } = await tryCatch(
     ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      // model: "gemini-2.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       contents: [
         INVOICE_PARSER_PROMPT,
         {
