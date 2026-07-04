@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
 import { safeParse } from "valibot";
 import { tryCatch } from "@/utils/tryCatch.ts";
-import { GOOGLEAI_API_KEY } from "@/config/env.ts";
+import { GOOGLEAI_API_KEY, GOOGLEAI_MODEL } from "@/config/env.ts";
 import { GeminiInvoiceSchema } from "@/schemas/geminiInvoice.ts";
 import {
   FacturaArgSchema,
@@ -64,8 +64,6 @@ export const parseInvoice = async (
     return;
   }
 
-  if (warnings.length > 0) console.warn(`Advertencias: ${warnings.join("\n")}`);
-  
   res.json({
     success: true,
     invoices: successInvoices,
@@ -87,8 +85,7 @@ const parseSingleInvoice = async (invoiceData: {
 
   const { result, error } = await tryCatch(
     ai.models.generateContent({
-      // model: "gemini-2.5-flash-lite",
-      model: "gemini-3.1-flash-lite",
+      model: GOOGLEAI_MODEL,
       contents: [
         INVOICE_PARSER_PROMPT,
         {
