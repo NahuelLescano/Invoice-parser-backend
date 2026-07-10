@@ -19,6 +19,7 @@ type ApiResponse =
 
 interface ParseInvoiceBody {
   invoices: {
+    imageId: string;
     imageBase64: string;
     mimeType: string;
   }[];
@@ -78,10 +79,11 @@ enum InvoiceStatusCode {
 }
 
 const parseSingleInvoice = async (invoiceData: {
+  imageId: string;
   imageBase64: string;
   mimeType: string;
 }): Promise<USInvoicePayload> => {
-  const { imageBase64, mimeType } = invoiceData;
+  const { imageBase64, mimeType, imageId } = invoiceData;
 
   const { result, error } = await tryCatch(
     ai.models.generateContent({
@@ -177,6 +179,7 @@ const parseSingleInvoice = async (invoiceData: {
   });
 
   return {
+    imageId: imageId,
     vendorName: facturaArg.proveedorNombre,
     dateOfInvoice: facturaArg.fecha,
     invoiceNumber: facturaArg.numeroFactura,
