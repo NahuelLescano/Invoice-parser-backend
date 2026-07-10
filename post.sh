@@ -28,7 +28,10 @@ for FILE in "$@"; do
     fi
     FIRST_ITEM=0
 
+    IMAGE_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid)
+
     echo "  {" >> "$PAYLOAD_FILE"
+    echo "    \"imageId\": \"$IMAGE_ID\"," >> "$PAYLOAD_FILE"
     echo "    \"mimeType\": \"$MIME_TYPE\"," >> "$PAYLOAD_FILE"
     echo "    \"imageBase64\": \"$BASE64_DATA\"" >> "$PAYLOAD_FILE"
     echo "  }" >> "$PAYLOAD_FILE"

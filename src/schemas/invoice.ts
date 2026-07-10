@@ -15,6 +15,10 @@ export const ParseInvoiceBodySchema = object({
   invoices: pipe(
     array(
       object({
+        imageId: pipe(
+          string(),
+          minLength(1, "El ID de la imagen es obligatorio."),
+        ),
         imageBase64: pipe(
           string(),
           trim(),
@@ -56,6 +60,7 @@ export const FacturaArgSchema = object({
 export type FacturaArg = InferInput<typeof FacturaArgSchema>;
 
 export interface USInvoicePayload {
+  imageId: string;
   vendorName: string;
   dateOfInvoice: string;
   invoiceNumber: string;
