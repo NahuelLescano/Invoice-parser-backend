@@ -24,6 +24,11 @@ Si es Coca-Cola (Coca-Cola FEMSA):
   - Sin IVA: precioUnitario = subtotal (columna 7) + imp. internos (columna 9). NO dividas por cantidad.
   - impuestosInternos: valor de la columna "IMP.INTERNOS" (total de la línea, NO por unidad).
   - unidadesPorBulto: extraer de la descripción (ej: "X 6" = 6).
+Si es Moët (Moët Hennessy / Bodegas Chandon):
+  - Con IVA: precioUnitario = último TOTAL (columna 10, el total de la línea con IVA). NO dividas por cantidad.
+  - Sin IVA: precioUnitario = "Neto gravado" + "Imp Interno". NO dividas por cantidad.
+  - impuestosInternos: valor de la columna "Impuesto Interno" (total de la línea).
+  - unidadesPorBulto: extraer de la descripción (ej: "6x75cl" = 6).
 
   3. TOTALES: Extrae el Subtotal Neto (Base Imponible general), el IVA Total y los Impuestos Internos Totales.
   4. REGLA ESTRICTA: IGNORA por completo cualquier "Percepción de IVA", "Percepción de Ingresos Brutos (IIBB)" o "Conceptos Agravados". No las sumes ni las incluyas en ningún lado.

@@ -126,15 +126,13 @@ const parseSingleInvoice = async (invoiceData: {
   const proveedor = facturaArg.proveedorNombre.toUpperCase();
 
   const totalExcludingTaxes = facturaArg.items.reduce((acc, item) => {
-    if (proveedor.includes("COCA") && item.ivaPorcentaje > 0) {
+    if (proveedor.includes("COCA") || proveedor.includes("MOET") && item.ivaPorcentaje > 0) {
       const netoTotal = (item.precioUnitario - item.impuestosInternos) /
         (1 + item.ivaPorcentaje / 100);
       return acc + netoTotal;
     } else {
       return acc + (item.precioUnitario - item.impuestosInternos);
     }
-
-    return acc + item.cantidad * item.precioUnitario;
   }, 0);
 
   const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
@@ -172,14 +170,13 @@ const parseSingleInvoice = async (invoiceData: {
 
       unitPriceWithIva = precioBot;
       unitPriceWithoutIva = precioSinImpuesto + impIntPorUnidad;
-    } else if (proveedor.includes("COCA")) {
+    } else if (proveedor.includes("COCA") || proveedor.includes("MOET")) {
       const totalUnits = item.cantidad * unidades;
 
       if (item.ivaPorcentaje > 0) {
         unitPriceWithIva = item.precioUnitario / totalUnits;
 
-        const netoTotal = (item.precioUnitario - item.impuestosInternos) /
-          (1 + item.ivaPorcentaje / 100);
+        const netoTotal = (item.precioUnitario - item.impuestosInternos) / (1 + item.ivaPorcentaje / 100);
         const impIntPorUnidad = item.impuestosInternos / totalUnits;
         const netoPorUnidad = netoTotal / totalUnits;
 
@@ -188,28 +185,21 @@ const parseSingleInvoice = async (invoiceData: {
         unitPriceWithoutIva = item.precioUnitario / totalUnits;
         unitPriceWithIva = unitPriceWithoutIva;
       }
-    } else if (proveedor.includes("QUILMES")) {
-      const unidades = item.unidadesPorBulto ?? 1;
-      const cantidadReal = item.cantidad * unidades;
-
-      unitPriceWithIva = item.precioUnitario;
-      unitPriceWithoutIva = item.ivaPorcentaje > 0
-        ? item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100)
-        : (item.precioUnitario + item.impuestosInternos) / cantidadReal;
-    } else if (proveedor.includes("MOET")) {
-      const precioNeto = item.precioUnitario / unidades;
-      const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
-      const impIntUnitario = item.impuestosInternos / unidades;
-
-      unitPriceWithIva = precioNeto + impIntUnitario + ivaProporcional;
-      unitPriceWithoutIva = precioNeto + impIntUnitario;
     } else if (proveedor.includes("WINE")) {
       const precioNeto = item.precioUnitario;
       const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
 
       unitPriceWithIva = precioNeto + ivaProporcional;
       unitPriceWithoutIva = precioNeto;
-    } else {
+    } else if (proveedor.includes("QUILMES")) {
+      const cantidadReal = item.cantidad * unidades;
+
+      unitPriceWithIva = item.precioUnitario;
+      unitPriceWithoutIva = item.ivaPorcentaje > 0
+        ? item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100)
+        : (item.precioUnitario + item.impuestosInternos) / cantidadReal;
+    }
+    else {
       const precioNeto = item.precioUnitario / unidades;
       const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
       const impInternoUnitario = item.impuestosInternos / unidades;
@@ -227,7 +217,7 @@ const parseSingleInvoice = async (invoiceData: {
   });
 
   return {
-    imageId: imageId,
+    imageId,
     vendorName: facturaArg.proveedorNombre,
     dateOfInvoice: facturaArg.fecha,
     invoiceNumber: facturaArg.numeroFactura,

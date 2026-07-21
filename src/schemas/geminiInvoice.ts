@@ -35,6 +35,8 @@ export const GeminiInvoiceSchema: Schema = {
             Para DBA es el Precio Bot (precio final con impuestos).
             Para Coca-Cola Con IVA es el último subtotal de la línea (columna 10, incluye IVA e imp. internos).
             Para Coca-Cola Sin IVA es la suma del subtotal neto (columna 7) + imp. internos (columna 9).
+            Para Moët Con IVA es el último TOTAL de la línea (columna 10, incluye IVA e imp. internos).
+            Para Moët Sin IVA es la suma de "Neto gravado" + "Imp Interno".
           `,
           },
           ivaPorcentaje: {
