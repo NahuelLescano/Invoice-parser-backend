@@ -1,4 +1,4 @@
-import { Type, type Schema } from "@google/genai";
+import { type Schema, Type } from "@google/genai";
 
 export const GeminiInvoiceSchema: Schema = {
   type: Type.OBJECT,
@@ -32,7 +32,9 @@ export const GeminiInvoiceSchema: Schema = {
             description: `
             Precio del ítem según el proveedor.
             Para Peñaflor es el Importe total de la línea.
-            Para DBA es el Precio Bot (precio final con impuestos).,
+            Para DBA es el Precio Bot (precio final con impuestos).
+            Para Coca-Cola Con IVA es el último subtotal de la línea (columna 10, incluye IVA e imp. internos).
+            Para Coca-Cola Sin IVA es la suma del subtotal neto (columna 7) + imp. internos (columna 9).
           `,
           },
           ivaPorcentaje: {
@@ -41,7 +43,8 @@ export const GeminiInvoiceSchema: Schema = {
           },
           impuestosInternos: {
             type: Type.NUMBER,
-            description: "Impuesto interno del item. Para la mayoria de los proveedores es por unidad, para Quilmes Sin IVA es el total de la línea (columna IMP.INTERNO). Para DBA es 0 (el impuesto interno es global, está en ImpuestosInternosTotal)",
+            description:
+              "Impuesto interno del item. Para la mayoria de los proveedores es por unidad, para Quilmes Sin IVA es el total de la línea (columna IMP.INTERNO). Para DBA es 0 (el impuesto interno es global, está en ImpuestosInternosTotal)",
           },
           unidadesPorBulto: {
             type: Type.NUMBER,
