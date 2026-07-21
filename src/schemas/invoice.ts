@@ -54,7 +54,6 @@ export const FacturaArgSchema = object({
   subtotalNeto: number(),
   ivaTotal: number(),
   impuestosInternosTotal: number(),
-  conceptosNoGravados: number(),
 });
 
 export type FacturaArg = InferInput<typeof FacturaArgSchema>;

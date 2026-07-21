@@ -128,14 +128,12 @@ const parseSingleInvoice = async (invoiceData: {
   }, 0);
 
   const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
-
-  const totalIncludingTaxes =
-    totalExcludingTaxes + totalTaxes + facturaArg.conceptosNoGravados;
+  const totalIncludingTaxes = totalExcludingTaxes + totalTaxes;
 
   const proveedor = facturaArg.proveedorNombre.toUpperCase();
 
   let porcentajeImpIntPenaflor = 0;
-  if (proveedor.includes("PEÑAFLOR")) {
+  if (proveedor.includes("PEÑAFLOR") && facturaArg.subtotalNeto > 0) {
     porcentajeImpIntPenaflor =
       facturaArg.impuestosInternosTotal / facturaArg.subtotalNeto;
   }
@@ -144,28 +142,56 @@ const parseSingleInvoice = async (invoiceData: {
     let unitPriceWithIva = 0;
     let unitPriceWithoutIva = 0;
 
-    const unidadesPorCaja = item.unidadesPorBulto ?? 1;
+    const unidades = item.unidadesPorBulto ?? 1;
+    const cantidadReal = item.cantidad * unidades;
 
-    const cantidadReal = item.cantidad * unidadesPorCaja;
-    const precioNeto = item.precioUnitario / unidadesPorCaja;
-    const impInternoUnitario = item.impuestosInternos / unidadesPorCaja;
-
-    const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
     if (proveedor.includes("PEÑAFLOR")) {
-      const impIntProporcional = precioNeto * porcentajeImpIntPenaflor;
+      const importePorUnidad = item.precioUnitario / (item.cantidad * unidades);
+      const ivaProporcional = importePorUnidad * (item.ivaPorcentaje / 100);
+      const impIntProporcional = importePorUnidad * porcentajeImpIntPenaflor;
 
-      unitPriceWithIva = precioNeto + ivaProporcional + impIntProporcional;
-      unitPriceWithoutIva = precioNeto + impIntProporcional;
-    } else if (proveedor.includes("WINE")) {
-      unitPriceWithIva = precioNeto + ivaProporcional;
-      unitPriceWithoutIva = precioNeto;
-    } else if (proveedor.includes("DBA")) {
-      const precioConIva = precioNeto + ivaProporcional;
-      const precioBot = precioConIva + impInternoUnitario;
+      unitPriceWithIva = importePorUnidad + ivaProporcional + impIntProporcional;
+      unitPriceWithoutIva = importePorUnidad + impIntProporcional;
+    } else if (proveedor.includes("DBA") || proveedor.includes("DISTRIBUIDORA DE BEBIDAS SRL")) {
+      const precioBot = item.precioUnitario;
+      const impIntPorUnidad = item.impuestosInternos / unidades;
+      const factorIva = 1 + (item.ivaPorcentaje / 100);
+      const precioSinImpuesto = (precioBot - impIntPorUnidad) / factorIva;
 
       unitPriceWithIva = precioBot;
-      unitPriceWithoutIva = precioNeto + impInternoUnitario;
+      unitPriceWithoutIva = precioSinImpuesto + impIntPorUnidad;
+    } else if (proveedor.includes("COCA")) {
+      const precioNeto = item.precioUnitario / unidades;
+      const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
+      const impIntUnitario = item.impuestosInternos / unidades;
+
+      unitPriceWithIva = precioNeto + impIntUnitario + ivaProporcional;
+      unitPriceWithoutIva = precioNeto + impIntUnitario;
+    } else if (proveedor.includes("QUILMES")) {
+      const unidades = item.unidadesPorBulto ?? 1;
+      const cantidadReal = item.cantidad * unidades;
+
+      unitPriceWithIva = item.precioUnitario;
+      unitPriceWithoutIva = item.ivaPorcentaje > 0 ?
+        item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100) : (item.precioUnitario + item.impuestosInternos) / cantidadReal;
+    } else if (proveedor.includes("MOET")) {
+      const precioNeto = item.precioUnitario / unidades;
+      const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
+      const impIntUnitario = item.impuestosInternos / unidades;
+
+      unitPriceWithIva = precioNeto + impIntUnitario + ivaProporcional;
+      unitPriceWithoutIva = precioNeto + impIntUnitario;
+    } else if (proveedor.includes("WINE")) {
+      const precioNeto = item.precioUnitario;
+      const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
+
+      unitPriceWithIva = precioNeto + ivaProporcional;
+      unitPriceWithoutIva = precioNeto;
     } else {
+      const precioNeto = item.precioUnitario / unidades;
+      const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
+      const impInternoUnitario = item.impuestosInternos / unidades;
+
       unitPriceWithIva = precioNeto + impInternoUnitario + ivaProporcional;
       unitPriceWithoutIva = precioNeto + impInternoUnitario;
     }

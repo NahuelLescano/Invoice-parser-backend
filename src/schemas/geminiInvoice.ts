@@ -29,7 +29,11 @@ export const GeminiInvoiceSchema: Schema = {
           cantidad: { type: Type.NUMBER },
           precioUnitario: {
             type: Type.NUMBER,
-            description: "Precio neto unitario sin impuestos.",
+            description: `
+            Precio del ítem según el proveedor.
+            Para Peñaflor es el Importe total de la línea.
+            Para DBA es el Precio Bot (precio final con impuestos).,
+          `,
           },
           ivaPorcentaje: {
             type: Type.NUMBER,
@@ -37,7 +41,7 @@ export const GeminiInvoiceSchema: Schema = {
           },
           impuestosInternos: {
             type: Type.NUMBER,
-            description: "Impuesto interno aplicado por unidad. Si no hay, 0.",
+            description: "Impuesto interno del item. Para la mayoria de los proveedores es por unidad, para Quilmes Sin IVA es el total de la línea (columna IMP.INTERNO). Para DBA es 0 (el impuesto interno es global, está en ImpuestosInternosTotal)",
           },
           unidadesPorBulto: {
             type: Type.NUMBER,
@@ -65,10 +69,6 @@ export const GeminiInvoiceSchema: Schema = {
       type: Type.NUMBER,
       description: "Total acumulado de impuestos internos al pie.",
     },
-    conceptosNoGravados: {
-      type: Type.NUMBER,
-      description: "Monto por exentos/no gravados.",
-    },
   },
   required: [
     "proveedorNombre",
@@ -78,6 +78,5 @@ export const GeminiInvoiceSchema: Schema = {
     "subtotalNeto",
     "ivaTotal",
     "impuestosInternosTotal",
-    "conceptosNoGravados",
   ],
 } as const;
