@@ -1,35 +1,42 @@
-# 🧾 Invoice Parser Backend (Arg ➡️ US • Batch & Business Rules Edition)
+# Invoice Parser Backend
 
-Un servicio backend de alto rendimiento construido con Node.js y TypeScript que utiliza **Google Gemini 2.5 Flash Lite** para extraer datos de múltiples facturas argentinas (A, B y C) en paralelo a partir de imágenes, validarlas estrictamente y transformarlas a un formato contable estandarizado.
+Un servicio backend construido con Node.js y TypeScript que utiliza **Google Gemini** para extraer datos de facturas argentinas (A, B y C) a partir de imágenes, validarlas y transformarlas a un formato contable estandarizado.
 
-## ✨ Características Principales
+## Caracteristicas Principales
 
-- **Procesamiento en Lote y Paralelismo:** Capacidad para recibir múltiples facturas en una sola petición HTTP, procesándolas en paralelo mediante la API de Gemini para optimizar los tiempos de respuesta.
-- **Motor de Reglas de Negocio por Proveedor:** Implementa lógica condicional avanzada para procesar la caótica facturación de distintos proveedores (DBA, Peñaflor, Wine Co S.A., Coca Cola, Quilmes, Moet Hennessy). Aplica promedios de impuestos internos y cálculos inversos de IVA según las reglas comerciales de cada distribuidora.
-- **Normalización de Stock (Bultos a Unidades):** La IA detecta de forma inteligente cajas y packs (ej: "Caja x6", "Pack x12"), y el backend desglosa matemáticamente los precios y cantidades para que el sistema de inventario trabaje siempre con la unidad mínima real (botellas/latas).
-- **Flexibilidad de Precios (Frontend-Agnostic):** Retorna simultáneamente el precio unitario exacto `Con IVA` y `Sin IVA`, delegando la decisión de visualización al frontend/cliente.
-- **Tolerancia a Fallos Parciales:** Implementa el patrón *Result* con `Promise.allSettled`. Si una factura del lote está corrupta o falla la validación, el endpoint no explota; procesa las demás con éxito y devuelve un desglose de las fallidas en un array de `warnings`.
-- **Validación con Estándar Moderno:** Validación estricta de entrada y salida utilizando **Valibot** para un flujo predecible sin excepciones ocultas (`throw`).
-- **DX Impecable (Developer Experience):** Configuración de Alias Paths (`@/*`) para evitar rutas relativas complejas e importaciones limpias.
+- **Procesamiento en Lote y Paralelismo:** Recibe multiples facturas en una sola peticion HTTP, procesandolas en paralelo mediante la API de Gemini.
+- **Motor de Reglas de Negocio por Proveedor:** Logica condicional avanzada para procesar facturacion de distintos proveedores (DBA, Penaflor, Wine Co S.A., Coca Cola, Quilmes, Moet Hennessy).
+- **Normalizacion de Stock (Bultos a Unidades):** La IA detecta cajas y packs (ej: "Caja x6", "Pack x12"), y el backend desglosa precios y cantidades para trabajar con la unidad minima real.
+- **Flexibilidad de Precios:** Retorna simultaneamente el precio unitario con IVA y sin IVA.
+- **Tolerancia a Fallos Parciales:** Patron *Result* con `Promise.allSettled`. Si una factura falla, las demas se procesan igual y las fallidas se informan en `warnings`.
+- **Validacion con Valibot:** Validacion estricta de entrada y salida para un flujo predecible.
+- **Docker + Fly.io:** Listo para deployar con Docker.
 
-## 📂 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```text
 src/
 ├── config/
-│   └── config.ts         # Centralización de variables de entorno y loadEnvFile()
+│   └── env.ts              # Variables de entorno validadas con Valibot
 ├── controllers/
-│   └── invoice.ts        # Controlador batch, normalización de bultos y switch de proveedores
+│   └── invoice.ts          # Controlador batch, normalizacion y switch de proveedores
+├── middleware/
+│   └── middleware.ts        # CORS, JSON parser, Morgan logger
 ├── prompts/
-│   └── invoice.prompt.ts # Prompt de auditoría impositiva aislado
+│   └── invoice.ts          # Prompt de auditoria impositiva
 ├── routes/
-│   └── invoice.routes.ts # Definición de rutas Express
+│   └── invoice.ts          # Definicion de rutas Express
 ├── schemas/
-│   └── invoice.schema.ts # Esquemas rigurosos de Valibot (Input, Internal y Output)
-└── index.ts              # Servidor Express y middlewares
+│   ├── env.ts              # Schema de variables de entorno
+│   ├── geminiInvoice.ts    # Schema de respuesta de Gemini
+│   └── invoice.ts          # Schemas de entrada y salida
+├── utils/
+│   └── tryCatch.ts         # Wrapper de manejo de errores
+└── index.ts                # Servidor Express y middlewares
 ```
 
-## 🚀 Instalación y Configuración
+## Instalacion y Configuracion
+
 1. Instalar dependencias:
 
 ```bash
@@ -37,27 +44,35 @@ pnpm install
 ```
 
 2. Variables de entorno:
-Crea un archivo .env en la raíz del proyecto:
+Crea un archivo `.env` en la raiz del proyecto basado en `.env.example`:
 
 ```bash
-Fragmento de código
 PORT=3000
-API_V1=/api/v1
-GOOGLEAI_API_KEY=tu_api_key_aqui
+GEMINI_API_KEY=tu_api_key_aqui
+GOOGLEAI_MODEL=gemini-2.0-flash
 ```
 
-3. Correr en desarrollo (con Live Reload):
+3. Correr en desarrollo:
 
 ```bash
 pnpm dev
 ```
 
-## 📖 Documentación de la API
-`POST /api/v1/parse-invoice`
+## Endpoints
 
-Analiza un lote de una o más imágenes de facturas en paralelo.
+### `GET /health`
 
-**Body de la petición (JSON):**
+Health check del servidor.
+
+```json
+"Ok"
+```
+
+### `POST /api/v1/invoice`
+
+Analiza un lote de una o mas imagenes de facturas en paralelo.
+
+**Body de la peticion (JSON):**
 
 ```json
 {
@@ -70,8 +85,7 @@ Analiza un lote de una o más imágenes de facturas en paralelo.
 }
 ```
 
-**Respuesta Exitosa / Éxito Parcial (200 OK):**
-Si al menos una factura se procesó correctamente, el estado es 200. Las facturas fallidas no detienen el flujo general y se informan en warnings.
+**Respuesta Exitosa (200 OK):**
 
 ```json
 {
@@ -87,7 +101,7 @@ Si al menos una factura se procesó correctamente, el estado es 200. Las factura
       "items": [
         {
           "description": "VINO CAFAYATE RESERVE TORRONTES 750 cc (Caja x6)",
-          "quantityPurchased": 6, 
+          "quantityPurchased": 6,
           "unitPriceWithIva": 8933.43,
           "unitPriceWithoutIva": 7383.00
         }
@@ -95,30 +109,22 @@ Si al menos una factura se procesó correctamente, el estado es 200. Las factura
     }
   ],
   "warnings": [
-    "Factura #2 falló: La IA devolvió un formato que no coincide con el esquema requerido."
+    "Factura #2 fallo: La IA devolvio un formato que no coincide con el esquema requerido."
   ]
 }
 ```
 
-*(Nota: Observar cómo quantityPurchased ya viene multiplicado y los precios unitarios divididos si el producto original venía en caja).*
+### Errores
 
-## Errores de Estructura:
+- **400 Bad Request:** El payload no contiene el array `invoices` o los elementos no cumplen con el formato.
+- **422 Unprocessable Entity:** Ninguna de las facturas pudo ser procesada o validada con exito.
 
-* 400 Bad Request: El payload no contiene el array invoices o los elementos no cumplen con el formato.
+## Pruebas desde la Terminal
 
-* 422 Unprocessable Entity: Ninguna de las facturas enviadas pudo ser procesada o validada con éxito.
-
-## 🧪 Pruebas desde la Terminal (CLI)
-El proyecto incluye un script de automatización en Bash (post.sh) optimizado para sistemas Linux. Transforma múltiples imágenes reales a Base64 dinámicamente y las envía al servidor en una sola petición.
-
-1. Ejecución:
+El proyecto incluye un script Bash (`post.sh`) que transforma imagenes a Base64 y las envia al servidor:
 
 ```bash
-# Otorgar permisos si es la primera vez
 chmod +x post.sh
+./post.sh ./images/quilmes.jpeg ./images/dba.png
 ```
 
-# Ejecutar pasando una o más imágenes como argumentos
-./test-invoices.sh ./images/quilmes.jpeg ./images/dba.png
-
-Desarrollado bajo patrones de diseño modernos, priorizando el tipado estricto y el control absoluto de reglas de negocio en tiempo de ejecución.
