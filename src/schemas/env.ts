@@ -1,6 +1,6 @@
 import { object, string } from "valibot";
 
-export const envSchema = object({
+export const EnvSchema = object({
   PORT: string(),
   GOOGLEAI_API_KEY: string(),
   GOOGLEAI_MODEL: string(),

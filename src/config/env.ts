@@ -5,15 +5,15 @@ import { parse } from "valibot";
 loadEnvFile();
 
 const env = parse(EnvSchema, {
-  PORT:             process.env.PORT,
+  PORT: process.env.PORT,
   GOOGLEAI_API_KEY: process.env.GOOGLEAI_API_KEY,
-  GOOGLEAI_MODEL:   process.env.GOOGLEAI_MODEL,
-  API_V1:           process.env.API_V1,
+  GOOGLEAI_MODEL: process.env.GOOGLEAI_MODEL,
+  API_V1: process.env.API_V1 ?? "/api/v1",
 });
 
 export const {
   PORT,
   GOOGLEAI_API_KEY,
   GOOGLEAI_MODEL,
-  API_V1 = "/api/v1",
+  API_V1,
 } = env;
