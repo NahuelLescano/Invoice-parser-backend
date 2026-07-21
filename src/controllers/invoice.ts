@@ -5,6 +5,7 @@ import { tryCatch } from "@/utils/tryCatch.ts";
 import { GOOGLEAI_API_KEY, GOOGLEAI_MODEL } from "@/config/env.ts";
 import { GeminiInvoiceSchema } from "@/schemas/geminiInvoice.ts";
 import {
+  FacturaArg,
   FacturaArgSchema,
   ParseInvoiceBodySchema,
   type USInvoicePayload,
@@ -85,6 +86,42 @@ const parseSingleInvoice = async (invoiceData: {
 }): Promise<USInvoicePayload> => {
   const { imageBase64, mimeType, imageId } = invoiceData;
 
+  const facturaArg = await parseGeneratedContent({ imageBase64, mimeType });
+  const proveedor = facturaArg.proveedorNombre.toUpperCase();
+
+  const totalExcludingTaxes = facturaArg.items.reduce((acc, item) => {
+    if ((proveedor.includes("COCA") || proveedor.includes("MOET")) && item.ivaPorcentaje > 0) {
+      const netoTotal = (item.precioUnitario - item.impuestosInternos) / (1 + item.ivaPorcentaje / 100);
+      return acc + netoTotal;
+    } else {
+      return acc + (item.precioUnitario - item.impuestosInternos);
+    }
+  }, 0);
+
+  const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
+  const totalIncludingTaxes = totalExcludingTaxes + totalTaxes;
+
+  const porcentajeImpIntPenaflor = facturaArg.subtotalNeto > 0
+    ? facturaArg.impuestosInternosTotal / facturaArg.subtotalNeto : 0;
+
+  const itemsProcesados = facturaArg.items.map((item) => parseItem(item, proveedor, porcentajeImpIntPenaflor));
+
+  return {
+    imageId,
+    vendorName: facturaArg.proveedorNombre,
+    dateOfInvoice: facturaArg.fecha,
+    invoiceNumber: facturaArg.numeroFactura,
+    totalCostExcludingTaxes: Number(totalExcludingTaxes.toFixed(2)),
+    totalTaxes: Number(totalTaxes.toFixed(2)),
+    totalCostIncludingTaxes: Number(totalIncludingTaxes.toFixed(2)),
+    items: itemsProcesados,
+  };
+};
+
+const parseGeneratedContent = async ({ imageBase64, mimeType }: {
+  imageBase64: string;
+  mimeType: string;
+}): Promise<FacturaArg> => {
   const { result, error } = await tryCatch(
     ai.models.generateContent({
       model: GOOGLEAI_MODEL,
@@ -122,108 +159,76 @@ const parseSingleInvoice = async (invoiceData: {
     );
   }
 
-  const facturaArg = invoiceParse.output;
-  const proveedor = facturaArg.proveedorNombre.toUpperCase();
+  return invoiceParse.output;
+}
 
-  const totalExcludingTaxes = facturaArg.items.reduce((acc, item) => {
-    if (proveedor.includes("COCA") || proveedor.includes("MOET") && item.ivaPorcentaje > 0) {
-      const netoTotal = (item.precioUnitario - item.impuestosInternos) /
-        (1 + item.ivaPorcentaje / 100);
-      return acc + netoTotal;
+const parseItem = (item: FacturaArg["items"][number], proveedor: string, porcentajeImpIntPenaflor: number) => {
+  let unitPriceWithIva = 0;
+  let unitPriceWithoutIva = 0;
+
+  const unidades = item.unidadesPorBulto ?? 1;
+  const cantidadReal = item.cantidad * unidades;
+
+  if (proveedor.includes("PEÑAFLOR")) {
+    const importePorUnidad = item.precioUnitario / (item.cantidad * unidades);
+    const ivaProporcional = importePorUnidad * (item.ivaPorcentaje / 100);
+    const impIntProporcional = importePorUnidad * porcentajeImpIntPenaflor;
+
+    unitPriceWithIva = importePorUnidad + ivaProporcional + impIntProporcional;
+    unitPriceWithoutIva = importePorUnidad + impIntProporcional;
+  } else if (
+    proveedor.includes("DBA") ||
+    proveedor.includes("DISTRIBUIDORA DE BEBIDAS SRL")
+  ) {
+    const precioBot = item.precioUnitario;
+    const impIntPorUnidad = item.impuestosInternos / unidades;
+    const factorIva = 1 + (item.ivaPorcentaje / 100);
+    const precioSinImpuesto = (precioBot - impIntPorUnidad) / factorIva;
+
+    unitPriceWithIva = precioBot;
+    unitPriceWithoutIva = precioSinImpuesto + impIntPorUnidad;
+  } else if (proveedor.includes("COCA") || proveedor.includes("MOET")) {
+    const totalUnits = item.cantidad * unidades;
+
+    if (item.ivaPorcentaje > 0) {
+      unitPriceWithIva = item.precioUnitario / totalUnits;
+
+      const netoTotal = (item.precioUnitario - item.impuestosInternos) / (1 + item.ivaPorcentaje / 100);
+      const impIntPorUnidad = item.impuestosInternos / totalUnits;
+      const netoPorUnidad = netoTotal / totalUnits;
+
+      unitPriceWithoutIva = netoPorUnidad + impIntPorUnidad;
     } else {
-      return acc + (item.precioUnitario - item.impuestosInternos);
+      unitPriceWithoutIva = item.precioUnitario / totalUnits;
+      unitPriceWithIva = unitPriceWithoutIva;
     }
-  }, 0);
+  } else if (proveedor.includes("WINE")) {
+    const precioNeto = item.precioUnitario;
+    const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
 
-  const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
-  const totalIncludingTaxes = totalExcludingTaxes + totalTaxes;
-
-  let porcentajeImpIntPenaflor = 0;
-  if (proveedor.includes("PEÑAFLOR") && facturaArg.subtotalNeto > 0) {
-    porcentajeImpIntPenaflor = facturaArg.impuestosInternosTotal /
-      facturaArg.subtotalNeto;
-  }
-
-  const itemsProcesados = facturaArg.items.map((item) => {
-    let unitPriceWithIva = 0;
-    let unitPriceWithoutIva = 0;
-
-    const unidades = item.unidadesPorBulto ?? 1;
+    unitPriceWithIva = precioNeto + ivaProporcional;
+    unitPriceWithoutIva = precioNeto;
+  } else if (proveedor.includes("QUILMES")) {
     const cantidadReal = item.cantidad * unidades;
 
-    if (proveedor.includes("PEÑAFLOR")) {
-      const importePorUnidad = item.precioUnitario / (item.cantidad * unidades);
-      const ivaProporcional = importePorUnidad * (item.ivaPorcentaje / 100);
-      const impIntProporcional = importePorUnidad * porcentajeImpIntPenaflor;
+    unitPriceWithIva = item.precioUnitario;
+    unitPriceWithoutIva = item.ivaPorcentaje > 0
+      ? item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100)
+      : (item.precioUnitario + item.impuestosInternos) / cantidadReal;
+  }
+  else {
+    const precioNeto = item.precioUnitario / unidades;
+    const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
+    const impInternoUnitario = item.impuestosInternos / unidades;
 
-      unitPriceWithIva = importePorUnidad + ivaProporcional +
-        impIntProporcional;
-      unitPriceWithoutIva = importePorUnidad + impIntProporcional;
-    } else if (
-      proveedor.includes("DBA") ||
-      proveedor.includes("DISTRIBUIDORA DE BEBIDAS SRL")
-    ) {
-      const precioBot = item.precioUnitario;
-      const impIntPorUnidad = item.impuestosInternos / unidades;
-      const factorIva = 1 + (item.ivaPorcentaje / 100);
-      const precioSinImpuesto = (precioBot - impIntPorUnidad) / factorIva;
-
-      unitPriceWithIva = precioBot;
-      unitPriceWithoutIva = precioSinImpuesto + impIntPorUnidad;
-    } else if (proveedor.includes("COCA") || proveedor.includes("MOET")) {
-      const totalUnits = item.cantidad * unidades;
-
-      if (item.ivaPorcentaje > 0) {
-        unitPriceWithIva = item.precioUnitario / totalUnits;
-
-        const netoTotal = (item.precioUnitario - item.impuestosInternos) / (1 + item.ivaPorcentaje / 100);
-        const impIntPorUnidad = item.impuestosInternos / totalUnits;
-        const netoPorUnidad = netoTotal / totalUnits;
-
-        unitPriceWithoutIva = netoPorUnidad + impIntPorUnidad;
-      } else {
-        unitPriceWithoutIva = item.precioUnitario / totalUnits;
-        unitPriceWithIva = unitPriceWithoutIva;
-      }
-    } else if (proveedor.includes("WINE")) {
-      const precioNeto = item.precioUnitario;
-      const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
-
-      unitPriceWithIva = precioNeto + ivaProporcional;
-      unitPriceWithoutIva = precioNeto;
-    } else if (proveedor.includes("QUILMES")) {
-      const cantidadReal = item.cantidad * unidades;
-
-      unitPriceWithIva = item.precioUnitario;
-      unitPriceWithoutIva = item.ivaPorcentaje > 0
-        ? item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100)
-        : (item.precioUnitario + item.impuestosInternos) / cantidadReal;
-    }
-    else {
-      const precioNeto = item.precioUnitario / unidades;
-      const ivaProporcional = precioNeto * (item.ivaPorcentaje / 100);
-      const impInternoUnitario = item.impuestosInternos / unidades;
-
-      unitPriceWithIva = precioNeto + impInternoUnitario + ivaProporcional;
-      unitPriceWithoutIva = precioNeto + impInternoUnitario;
-    }
-
-    return {
-      description: item.insumo,
-      quantityPurchased: Number(cantidadReal.toFixed(2)),
-      unitPriceWithIva: Number(unitPriceWithIva.toFixed(2)),
-      unitPriceWithoutIva: Number(unitPriceWithoutIva.toFixed(2)),
-    };
-  });
+    unitPriceWithIva = precioNeto + impInternoUnitario + ivaProporcional;
+    unitPriceWithoutIva = precioNeto + impInternoUnitario;
+  }
 
   return {
-    imageId,
-    vendorName: facturaArg.proveedorNombre,
-    dateOfInvoice: facturaArg.fecha,
-    invoiceNumber: facturaArg.numeroFactura,
-    totalCostExcludingTaxes: Number(totalExcludingTaxes.toFixed(2)),
-    totalTaxes: Number(totalTaxes.toFixed(2)),
-    totalCostIncludingTaxes: Number(totalIncludingTaxes.toFixed(2)),
-    items: itemsProcesados,
+    description: item.insumo,
+    quantityPurchased: Number(cantidadReal.toFixed(2)),
+    unitPriceWithIva: Number(unitPriceWithIva.toFixed(2)),
+    unitPriceWithoutIva: Number(unitPriceWithoutIva.toFixed(2)),
   };
-};
+}
