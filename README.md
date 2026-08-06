@@ -10,7 +10,6 @@ Un servicio backend construido con Node.js y TypeScript que utiliza **Google Gem
 - **Flexibilidad de Precios:** Retorna simultaneamente el precio unitario con IVA y sin IVA.
 - **Tolerancia a Fallos Parciales:** Patron *Result* con `Promise.allSettled`. Si una factura falla, las demas se procesan igual y las fallidas se informan en `warnings`.
 - **Validacion con Valibot:** Validacion estricta de entrada y salida para un flujo predecible.
-- **Docker + Fly.io:** Listo para deployar con Docker.
 
 ## Estructura del Proyecto
 
@@ -70,7 +69,7 @@ Health check del servidor.
 
 ### `POST /api/v1/invoice`
 
-Analiza un lote de una o mas imagenes de facturas en paralelo.
+Analiza una o mas imagenes de facturas en paralelo.
 
 **Body de la peticion (JSON):**
 
@@ -79,7 +78,8 @@ Analiza un lote de una o mas imagenes de facturas en paralelo.
   "invoices": [
     {
       "imageBase64": "iVBORw0KGgoAAAANSUhEUgAA...",
-      "mimeType": "image/jpeg"
+      "mimeType": "image/jpeg",
+      "imageId": "62163468-df70-4e8b-9dc8-b041000a98a6"
     }
   ]
 }
@@ -92,18 +92,25 @@ Analiza un lote de una o mas imagenes de facturas en paralelo.
   "success": true,
   "invoices": [
     {
-      "vendorName": "DISTRIBUIDORA DBA",
+      "imageId": "62163468-df70-4e8b-9dc8-b041000a98a6",
+      "vendorName": "Distribuidora de Bebidas SRL",
       "dateOfInvoice": "2026-06-08",
       "invoiceNumber": "00013-00180863",
-      "totalCostExcludingTaxes": 176964.00,
-      "totalTaxes": 46888.76,
-      "totalCostIncludingTaxes": 223852.76,
+      "totalCostExcludingTaxes": 46112.27,
+      "totalTaxes": 44629.42,
+      "totalCostIncludingTaxes": 90741.69,
       "items": [
         {
-          "description": "VINO CAFAYATE RESERVE TORRONTES 750 cc (Caja x6)",
+          "description": "VINO CAFAYATE RESERVE TORRONTES 750 cc",
           "quantityPurchased": 6,
-          "unitPriceWithIva": 8933.43,
-          "unitPriceWithoutIva": 7383.00
+          "unitPriceWithIva": 6312.47,
+          "unitPriceWithoutIva": 5218.13
+        },
+        {
+          "description": "TEQUILA CUERVO ORO 750 cc",
+          "quantityPurchased": 3,
+          "unitPriceWithIva": 39799.8,
+          "unitPriceWithoutIva": 32893.61
         }
       ]
     }
