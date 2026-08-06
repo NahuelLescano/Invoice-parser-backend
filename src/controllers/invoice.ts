@@ -98,13 +98,20 @@ const parseSingleInvoice = async (invoiceData: {
     }
   }, 0);
 
-  const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
-  const totalIncludingTaxes = totalExcludingTaxes + totalTaxes;
+  // Codigo horrible, hay que refactorizarlo.
+  const totalUnidades = facturaArg.items.reduce((acc, item) => {
+    return acc + (item.cantidad * (item.unidadesPorBulto ?? 1));
+  }, 0);
+  const impIntPorUnidadDBA = proveedor.includes("DBA") && totalUnidades > 0
+    ? facturaArg.impuestosInternosTotal / totalUnidades : 0;
 
   const porcentajeImpIntPenaflor = facturaArg.subtotalNeto > 0
     ? facturaArg.impuestosInternosTotal / facturaArg.subtotalNeto : 0;
 
-  const itemsProcesados = facturaArg.items.map((item) => parseItem(item, proveedor, porcentajeImpIntPenaflor));
+  const itemsProcesados = facturaArg.items.map((item) => parseItem(item, proveedor, porcentajeImpIntPenaflor, impIntPorUnidadDBA));
+
+  const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
+  const totalIncludingTaxes = totalExcludingTaxes + totalTaxes;
 
   return {
     imageId,
@@ -161,8 +168,7 @@ const parseGeneratedContent = async ({ imageBase64, mimeType }: {
 
   return invoiceParse.output;
 }
-
-const parseItem = (item: FacturaArg["items"][number], proveedor: string, porcentajeImpIntPenaflor: number) => {
+const parseItem = (item: FacturaArg["items"][number], proveedor: string, porcentajeImpIntPenaflor: number, impIntPorUnidadDBA: number) => {
   let unitPriceWithIva = 0;
   let unitPriceWithoutIva = 0;
 
@@ -181,12 +187,11 @@ const parseItem = (item: FacturaArg["items"][number], proveedor: string, porcent
     proveedor.includes("DISTRIBUIDORA DE BEBIDAS SRL")
   ) {
     const precioBot = item.precioUnitario;
-    const impIntPorUnidad = item.impuestosInternos / unidades;
     const factorIva = 1 + (item.ivaPorcentaje / 100);
-    const precioSinImpuesto = (precioBot - impIntPorUnidad) / factorIva;
+    const precioSinImpuestos = (item.precioUnitario - impIntPorUnidadDBA) / factorIva;
 
     unitPriceWithIva = precioBot;
-    unitPriceWithoutIva = precioSinImpuesto + impIntPorUnidad;
+    unitPriceWithoutIva = precioSinImpuestos + factorIva;
   } else if (proveedor.includes("COCA") || proveedor.includes("MOET")) {
     const totalUnits = item.cantidad * unidades;
 

@@ -46,7 +46,7 @@ export const GeminiInvoiceSchema: Schema = {
           impuestosInternos: {
             type: Type.NUMBER,
             description:
-              "Impuesto interno del item. Para la mayoria de los proveedores es por unidad, para Quilmes Sin IVA es el total de la línea (columna IMP.INTERNO). Para DBA es 0 (el impuesto interno es global, está en ImpuestosInternosTotal)",
+              "Impuesto interno del item. Para la mayoria de los proveedores es por unidad, para Quilmes Sin IVA es el total de la línea (columna IMP.INTERNO). Para DBA el impuesto interno es global, está en Impuestos Internos al pie de la factura, y se debe distribuir proporcionalmente entre los items.",
           },
           unidadesPorBulto: {
             type: Type.NUMBER,
