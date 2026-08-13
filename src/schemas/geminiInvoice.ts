@@ -53,6 +53,11 @@ export const GeminiInvoiceSchema: Schema = {
             description:
               "Si la descripción indica caja, pack o bulto (ej: 'caja x6'), extrae ese multiplicador. Si es suelto, 1.",
           },
+          subtotal: {
+            type: Type.NUMBER,
+            description:
+              "Subtotal de la línea (columna SUBTOTAL). Para Quilmes Sin IVA.",
+          },
         },
         required: [
           "insumo",
@@ -61,6 +66,7 @@ export const GeminiInvoiceSchema: Schema = {
           "ivaPorcentaje",
           "impuestosInternos",
           "unidadesPorBulto",
+          "subtotal"
         ],
       },
     },

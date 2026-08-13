@@ -19,6 +19,7 @@ Si es Quilmes:
     * Si la factura tiene IVA: tomá el valor de la columna "PREC.UNI.FINAL" (ya es el precio unitario final).
     * Si la factura NO tiene IVA: tomá el valor de la columna "SUBTOTAL" (total de la línea, NO el precio unitario).
   - impuestosInternos: tomá el valor de la columna "IMP.INTERNO" (total de la línea, NO por unidad).
+  - subtotal: tomá el valor de la columna "SUBTOTAL" (solo para Quilmes SIN IVA, sino 0).
 Si es Coca-Cola (Coca-Cola FEMSA):
   - Con IVA: precioUnitario = último subtotal (columna 10, el total de la línea con IVA). NO dividas por cantidad.
   - Sin IVA: precioUnitario = subtotal (columna 7) + imp. internos (columna 9). NO dividas por cantidad.

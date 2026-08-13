@@ -80,10 +80,18 @@ const calculatePriceQuilmes: PriceCalculator = (item) => {
   const unidades = item.unidadesPorBulto ?? 1;
   const cantidadReal = item.cantidad * unidades;
 
-  const unitPriceWithIva = item.precioUnitario;
+  if (item.insumo.toUpperCase().includes("SERVICIO LOGISTICO") || item.insumo.toUpperCase().includes("SERV BEES FLEX DELIVERY")) {
+    return {
+      unitPriceWithIva: 0,
+      unitPriceWithoutIva: 0,
+      totalCostExcludingTaxes: 0,
+    }
+  }
+
+  const unitPriceWithIva = item.precioUnitario / cantidadReal;
   const unitPriceWithoutIva = item.ivaPorcentaje > 0
-    ? item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100)
-    : (item.precioUnitario + item.impuestosInternos) / cantidadReal;
+    ? (item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100)) / cantidadReal
+    : (item.subtotal + item.impuestosInternos) / cantidadReal;
 
   return {
     unitPriceWithIva,
