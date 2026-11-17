@@ -15,11 +15,9 @@ Si es DBA:
   - precioUnitario: toma el valor de la columna "Precio Bot".
   - impuestosInternos: tomá el valor de la columna de impuestos internos si aparece en el detalle; si no, usá 0.
 Si es Quilmes:
-  - precioUnitario:
-    * Si la factura tiene IVA: tomá el valor de la columna "PREC.UNI.FINAL" (ya es el precio unitario final).
-    * Si la factura NO tiene IVA: tomá el valor de la columna "SUBTOTAL" (total de la línea, NO el precio unitario).
+  - precioUnitario: tomá el valor de la columna "TOTAL" (total de la línea CON IVA e impuestos internos, NO el precio unitario de "PREC.UNI.FINAL"). NO dividas por cantidad. Si la factura no tiene columna "TOTAL", usá la suma de "SUBTOTAL" + "IMP.INTERNO" + "IMP.IVA".
   - impuestosInternos: tomá el valor de la columna "IMP.INTERNO" (total de la línea, NO por unidad).
-  - subtotal: tomá el valor de la columna "SUBTOTAL" (solo para Quilmes SIN IVA, sino 0).
+  - subtotal: tomá el valor de la columna "SUBTOTAL" (neto de la línea, siempre, tanto con IVA como sin IVA).
 Si es Coca-Cola (Coca-Cola FEMSA):
   - Con IVA: precioUnitario = último subtotal (columna 10, el total de la línea con IVA). NO dividas por cantidad.
   - Sin IVA: precioUnitario = subtotal (columna 7) + imp. internos (columna 9). NO dividas por cantidad.

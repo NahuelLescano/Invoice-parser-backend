@@ -33,6 +33,7 @@ export const GeminiInvoiceSchema: Schema = {
             Precio del ítem según el proveedor.
             Para Peñaflor es el Importe total de la línea.
             Para DBA es el Precio Bot (precio final con impuestos).
+            Para Quilmes es el total de la línea con IVA e impuestos internos (columna TOTAL; si no existe, SUBTOTAL + IMP.INTERNO + IMP.IVA). NO dividir por cantidad.
             Para Coca-Cola Con IVA es el último subtotal de la línea (columna 10, incluye IVA e imp. internos).
             Para Coca-Cola Sin IVA es la suma del subtotal neto (columna 7) + imp. internos (columna 9).
             Para Moët Con IVA es el último TOTAL de la línea (columna 10, incluye IVA e imp. internos).
@@ -46,7 +47,7 @@ export const GeminiInvoiceSchema: Schema = {
           impuestosInternos: {
             type: Type.NUMBER,
             description:
-              "Impuesto interno del item. Para la mayoria de los proveedores es por unidad, para Quilmes Sin IVA es el total de la línea (columna IMP.INTERNO). Para DBA el impuesto interno es global, está en Impuestos Internos al pie de la factura, y se debe distribuir proporcionalmente entre los items.",
+              "Impuesto interno del item. Para la mayoria de los proveedores es por unidad, para Quilmes es el total de la línea (columna IMP.INTERNO). Para DBA el impuesto interno es global, está en Impuestos Internos al pie de la factura, y se debe distribuir proporcionalmente entre los items.",
           },
           unidadesPorBulto: {
             type: Type.NUMBER,
@@ -56,7 +57,7 @@ export const GeminiInvoiceSchema: Schema = {
           subtotal: {
             type: Type.NUMBER,
             description:
-              "Subtotal de la línea (columna SUBTOTAL). Para Quilmes Sin IVA.",
+              "Subtotal neto de la línea (columna SUBTOTAL), sin impuestos. Para Quilmes siempre, con o sin IVA.",
           },
         },
         required: [

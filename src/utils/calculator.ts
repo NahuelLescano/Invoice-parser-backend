@@ -88,15 +88,25 @@ const calculatePriceQuilmes: PriceCalculator = (item) => {
     }
   }
 
-  const unitPriceWithIva = item.precioUnitario / cantidadReal;
-  const unitPriceWithoutIva = item.ivaPorcentaje > 0
-    ? (item.precioUnitario - (item.precioUnitario * item.ivaPorcentaje / 100)) / cantidadReal
-    : (item.subtotal + item.impuestosInternos) / cantidadReal;
+  // Para Quilmes, subtotal e impuestosInternos son totales de la línea.
+  // El precio con IVA se calcula desde la línea (el IVA se aplica solo sobre
+  // el neto) para no depender de que la IA lea bien la columna TOTAL.
+  const factorIva = 1 + item.ivaPorcentaje / 100;
+  const tieneDatosDeLinea = item.subtotal > 0;
+
+  const unitPriceWithIva = tieneDatosDeLinea
+    ? (item.subtotal * factorIva + item.impuestosInternos) / cantidadReal
+    : item.precioUnitario / cantidadReal;
+  const unitPriceWithoutIva = tieneDatosDeLinea
+    ? (item.subtotal + item.impuestosInternos) / cantidadReal
+    : item.precioUnitario / (factorIva * cantidadReal);
 
   return {
     unitPriceWithIva,
     unitPriceWithoutIva,
-    totalCostExcludingTaxes: unitPriceWithoutIva * cantidadReal,
+    totalCostExcludingTaxes: tieneDatosDeLinea
+      ? item.subtotal
+      : item.precioUnitario / factorIva,
   }
 }
 

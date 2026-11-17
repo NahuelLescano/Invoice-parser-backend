@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { safeParse } from "valibot";
 import { tryCatch } from "@/utils/tryCatch.ts";
 import { findCalculator } from "@/utils/calculator.ts";
-import { GOOGLEAI_API_KEY, GOOGLEAI_MODEL } from "@/config/env.ts";
+import { AI_API_KEY, AI_MODEL } from "@/config/env.ts";
 import { GeminiInvoiceSchema } from "@/schemas/geminiInvoice.ts";
 import {
   FacturaArg,
@@ -13,10 +13,10 @@ import {
 } from "@/schemas/invoice.ts";
 import { INVOICE_PARSER_PROMPT } from "@/prompts/invoice.ts";
 
-const ai = new GoogleGenAI({ apiKey: GOOGLEAI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: AI_API_KEY });
 
 type ApiResponse =
-  | { success: true; invoices: USInvoicePayload[]; warnings?: string[] }
+  | { success: true; invoices: USInvoicePayload[]; warnings?: string[], total: number }
   | { error: string; details?: any };
 
 interface ParseInvoiceBody {
@@ -49,9 +49,11 @@ export const parseInvoice = async (
   const successInvoices: USInvoicePayload[] = [];
   const warnings: string[] = [];
 
+  let count_invoices = 0;
   results.forEach((result, index) => {
     if (result.status === "fulfilled") {
       successInvoices.push(result.value);
+      count_invoices++;
     } else {
       warnings.push(
         `Error al procesar la factura #${index + 1}: ${result.reason.message}`,
@@ -71,6 +73,7 @@ export const parseInvoice = async (
     success: true,
     invoices: successInvoices,
     warnings: warnings.length > 0 ? warnings : undefined,
+    total: count_invoices,
   });
 };
 
@@ -86,25 +89,40 @@ const parseSingleInvoice = async (invoiceData: {
 
   const calculator = findCalculator(proveedor);
 
-  const itemsProcesados = facturaArg.items.map((item) => {
-    const result = calculator(item, facturaArg);
+  const itemsCalculados = facturaArg.items.map((item) => ({
+    item,
+    result: calculator(item, facturaArg),
+    cantidadReal: item.cantidad * (item.unidadesPorBulto ?? 1),
+  }));
 
-    const cantidadReal = item.cantidad * (item.unidadesPorBulto ?? 1);
+  const itemsProcesados = itemsCalculados.map(({ item, result, cantidadReal }) => ({
+    description: item.insumo,
+    quantityPurchased: Number(cantidadReal.toFixed(2)),
+    unitPriceWithIva: Number(result.unitPriceWithIva.toFixed(2)),
+    unitPriceWithoutIva: Number(result.unitPriceWithoutIva.toFixed(2)),
+  }));
 
-    return {
-      description: item.insumo,
-      quantityPurchased: Number(cantidadReal.toFixed(2)),
-      unitPriceWithIva: Number(result.unitPriceWithIva.toFixed(2)),
-      unitPriceWithoutIva: Number(result.unitPriceWithoutIva.toFixed(2)),
-    };
-  });
+  let totalExcludingTaxes = 0;
+  let ivaTotal = facturaArg.ivaTotal;
+  let impuestosInternosTotal = facturaArg.impuestosInternosTotal;
 
-  const totalExcludingTaxes = facturaArg.items.reduce((acc, item) => {
-    const result = calculator(item, facturaArg);
-    return acc + result.totalCostExcludingTaxes;
-  }, 0);
+  for (const { item, result } of itemsCalculados) {
+    totalExcludingTaxes += result.totalCostExcludingTaxes;
 
-  const totalTaxes = facturaArg.ivaTotal + facturaArg.impuestosInternosTotal;
+    // Las líneas que el calculador excluye (ej: servicios de Quilmes) se
+    // muestran en 0, así que tampoco deben aportar impuestos al total.
+    const lineaExcluida =
+      result.totalCostExcludingTaxes === 0 &&
+      result.unitPriceWithIva === 0 &&
+      result.unitPriceWithoutIva === 0;
+
+    if (lineaExcluida) {
+      ivaTotal -= item.subtotal * (item.ivaPorcentaje / 100);
+      impuestosInternosTotal -= item.impuestosInternos;
+    }
+  }
+
+  const totalTaxes = ivaTotal + impuestosInternosTotal;
   const totalIncludingTaxes = totalExcludingTaxes + totalTaxes;
 
   return {
@@ -125,7 +143,7 @@ const parseGeneratedContent = async ({ imageBase64, mimeType }: {
 }): Promise<FacturaArg> => {
   const { result, error } = await tryCatch(
     ai.models.generateContent({
-      model: GOOGLEAI_MODEL,
+      model: AI_MODEL,
       contents: [
         INVOICE_PARSER_PROMPT,
         {

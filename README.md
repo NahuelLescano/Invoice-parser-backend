@@ -47,8 +47,8 @@ Crea un archivo `.env` en la raiz del proyecto basado en `.env.example`:
 
 ```bash
 PORT=3000
-GEMINI_API_KEY=tu_api_key_aqui
-GOOGLEAI_MODEL=gemini-flash-latest
+IA_API_KEY=tu_api_key_aqui
+IA_MODEL=gemini-3.1-flash-lite
 ```
 
 3. Correr en desarrollo:
